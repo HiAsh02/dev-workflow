@@ -68,6 +68,28 @@ test("L-08: language-specific zips unpack to unique canonical 8-skill layouts, p
         fs.existsSync(path.join(rootBundle, "README.zh-CN.md")),
         locale === "zh-CN"
       );
+      const templateNames = fs.readdirSync(path.join(rootBundle, "templates")).sort();
+      assert.deepEqual(templateNames, [
+        "compatibility-report.md", "design.md", "review.md", "run-state.json",
+        "spec.md", "task.md", "worklog.md",
+      ]);
+      const design = fs.readFileSync(path.join(rootBundle, "templates/design.md"), "utf8");
+      if (locale === "zh-CN") {
+        assert.match(design, /[\u4e00-\u9fff]/);
+      } else {
+        assert.match(design, /Design Brief/);
+      }
+      const standaloneReadme = fs.readFileSync(path.join(rootBundle, "README.md"), "utf8");
+      assert.match(standaloneReadme, /distribution bundle/i);
+      assert.match(standaloneReadme, /\.agents\/skills/);
+      assert.doesNotMatch(standaloneReadme, /\]\(\.\/docs\//);
+      assert.doesNotMatch(standaloneReadme, /^node bin\/dev-workflow\.mjs/m);
+      if (locale === "zh-CN") {
+        const localizedReadme = fs.readFileSync(path.join(rootBundle, "README.zh-CN.md"), "utf8");
+        assert.match(localizedReadme, /精简发布包/);
+        assert.doesNotMatch(localizedReadme, /\]\(\.\/docs\//);
+        assert.doesNotMatch(localizedReadme, /^node bin\/dev-workflow\.mjs/m);
+      }
       const manifest = JSON.parse(fs.readFileSync(path.join(rootBundle, "plugin.json"), "utf8"));
       const mRes = validatePluginManifest(manifest, schemaPath);
       assert.equal(mRes.valid, true, mRes.errors.join("; "));

@@ -25,8 +25,8 @@ const defaultHostsDir = path.join(defaultPackageRoot, "hosts");
 export const BILINGUAL_LANGUAGE_PROMPT = [
   "准备安装 dev-workflow。请选择使用语言 (Choose Skill Language):",
   "",
-  "1. 简体中文 (zh-CN)：Skill 指令、执行手册和模板使用中文。",
-  "2. English (en)：使用原英文版本 (English Skills, playbooks, and templates).",
+  "1. 简体中文 (zh-CN)：Skill 指令和执行手册为中文；中文模板可从源码仓库或语言发布包获取。",
+  "2. English (en)：使用英文 Skills 和 playbooks；英文模板可从源码仓库或语言发布包获取。",
   "",
   "两个版本能力和安全规则保持一致。安装目标只会启用其中一种语言。请输入 1 或 2: ",
 ].join("\n");

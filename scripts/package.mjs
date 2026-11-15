@@ -17,11 +17,18 @@ const repoRoot = path.resolve(__dirname, "..");
 
 const TOP_LEVEL_FILES = ["plugin.json", "VERSION", "LICENSE", "README.md", "CHANGELOG.md"];
 
+// Standalone releases use packaging guides, not source-only CLI documentation.
+function bundleTopSource(rootDir, rel) {
+  if (rel === "README.md") return path.join(rootDir, "packaging", "README.dist.en.md");
+  if (rel === "README.zh-CN.md") return path.join(rootDir, "packaging", "README.dist.zh-CN.md");
+  return path.join(rootDir, rel);
+}
+
 function collectBundleFiles(rootDir, locale) {
   const topFiles = locale === "zh-CN" ? [...TOP_LEVEL_FILES, "README.zh-CN.md"] : TOP_LEVEL_FILES;
   const filesToCopy = [];
   for (const rel of topFiles) {
-    const abs = path.join(rootDir, rel);
+    const abs = bundleTopSource(rootDir, rel);
     if (!fs.existsSync(abs)) {
       throw new Error(`Missing required package file: ${rel}`);
     }
@@ -37,6 +44,14 @@ function collectBundleFiles(rootDir, locale) {
     abs: path.join(skillsSrcDir, rel),
   }));
   filesToCopy.push(...skillFiles);
+
+  const templatesSrcDir = locale === "zh-CN"
+    ? path.join(rootDir, "locales", "zh-CN", "templates")
+    : path.join(rootDir, "templates");
+  filesToCopy.push(...walkContainedFiles(templatesSrcDir).map((rel) => ({
+    rel: `templates/${rel}`,
+    abs: path.join(templatesSrcDir, rel),
+  })));
   filesToCopy.sort((a, b) => a.rel.localeCompare(b.rel, "en"));
   return filesToCopy;
 }
@@ -54,11 +69,7 @@ function buildSingleLocaleBundle({ rootDir, outRoot, version, locale }) {
 
   const secretFindings = scanSensitiveArtifacts(
     rootDir,
-    filesToCopy.map((f) =>
-      locale === "zh-CN" && f.rel.startsWith("skills/")
-        ? `locales/zh-CN/${f.rel}`
-        : f.rel
-    )
+    filesToCopy.map((f) => path.relative(rootDir, f.abs).replaceAll("\\", "/"))
   );
   if (secretFindings.length > 0) {
     throw new Error(`Sensitive artifact scan failed (${locale}):\n${secretFindings.join("\n")}`);
