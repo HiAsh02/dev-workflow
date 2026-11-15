@@ -34,7 +34,11 @@ test("ensureContainedPath rejects symlink escapes inside install target", () => 
   const outside = fs.mkdtempSync(path.join(os.tmpdir(), "dw-escape-out-"));
   try {
     fs.mkdirSync(path.join(project, ".agents"), { recursive: true });
-    fs.symlinkSync(outside, path.join(project, ".agents/skills"));
+    fs.symlinkSync(
+      outside,
+      path.join(project, ".agents/skills"),
+      process.platform === "win32" ? "junction" : undefined
+    );
 
     const check = ensureContainedPath(project, ".agents/skills/dw-start/SKILL.md");
     assert.equal(check.ok, false);

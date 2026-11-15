@@ -51,9 +51,20 @@ test("grok-bot is rejected explicitly and never confused with grok-build", () =>
 
 test("detectHost catches identity mismatch for grok-build binary", () => {
   const fakeBinDir = fs.mkdtempSync(path.join(os.tmpdir(), "dw-fake-bin-"));
-  const fakeGrok = path.join(fakeBinDir, "grok");
-  fs.writeFileSync(fakeGrok, "#!/bin/sh\necho 'unrelated-tool 9.9.9'\n", "utf8");
-  fs.chmodSync(fakeGrok, 0o755);
+  const fakeGrok = path.join(
+    fakeBinDir,
+    process.platform === "win32" ? "grok.cmd" : "grok"
+  );
+  fs.writeFileSync(
+    fakeGrok,
+    process.platform === "win32"
+      ? "@echo unrelated-tool 9.9.9\r\n"
+      : "#!/bin/sh\necho 'unrelated-tool 9.9.9'\n",
+    "utf8"
+  );
+  if (process.platform !== "win32") {
+    fs.chmodSync(fakeGrok, 0o755);
+  }
 
   try {
     const res = detectHost(
