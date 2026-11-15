@@ -4,7 +4,7 @@ All notable changes to `dev-workflow` are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] (R3/R4 hardening & bilingual `en`/`zh-CN` integrated locally; not tagged/released)
+## [Unreleased] (bilingual `en`/`zh-CN`, installer hardening, and distribution improvements; not tagged/released)
 
 ### Added
 
@@ -21,6 +21,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **R4-02 & R4-04 (Historical / Custom Source Manifests & Partial Uninstall)**: Ownership ledgers and WAL v2 journals persist digest-verified `source_manifest` (restricted to `PLUGIN_TOP_FILES`/`README.zh-CN.md` and `dw-*` paths), `prior_source_manifest`, and `language`. Crash recovery (`validateRecoveryJournal`) and `uninstall` validate historical custom/prior files without trusting unverified `ledger.files` entries (`R2-REG-LEDGER-SPOOF-01`), while legacy ledgers lacking `source_manifest` fail closed and explicitly report `partial_uninstall`, `remaining_owned_files`, and `manual_remediation`.
 - **R4-03 (WAL Origin & Workspace Trust Boundary)**: Uncommitted journals (`status !== "committed"`) require an existing `backupDir` on disk, refuse `delete_created` entries targeting already-owned untouched ledgers, enforce WAL/ledger language consistency, never bypass validation on `--force-unlock`, and document the workspace trust boundary in [docs/SECURITY.md](./docs/SECURITY.md).
 - **R3 Hardening (previously landed on `main` `22346417` / `ae0343fa`)**: Recovery WAL v2 identity/path/backup checks, `pending`/`applied`/`rolled_back` undo states, shared-root file addition/removal coordination, prerelease SemVer ordering, strict `done` evidence metadata on state writes, and R3 regression tests.
+
+### Maintenance
+
+- Removed superseded research drafts and implementation handoff plans from the current source tree. Updated `AGENTS.md`, architecture docs and README navigation to reference active Skills, schemas and compatibility evidence.
+- Bilingual release archives include language-matched templates and standalone installation guides; source-repository installer commands remain in the full repository.
 
 ### Limitations
 

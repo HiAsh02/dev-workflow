@@ -45,7 +45,6 @@ function checkStaleRepoNames(rootDir) {
     "package.json",
     "CHANGELOG.md",
     "docs/ARCHITECTURE.md",
-    "docs/IMPLEMENTATION_PLAN.md",
     "docs/COMPATIBILITY.md",
     "docs/SECURITY.md",
     "docs/PROVENANCE.md",
@@ -55,7 +54,7 @@ function checkStaleRepoNames(rootDir) {
     const abs = path.join(rootDir, rel);
     if (!fs.existsSync(abs)) continue;
     const text = fs.readFileSync(abs, "utf8");
-    if (rel !== "docs/ARCHITECTURE.md" && text.includes("HiAsh02/dev--workflow")) {
+    if (text.includes("HiAsh02/dev--workflow")) {
       errors.push(`${rel} contains stale double-hyphen repo URL 'HiAsh02/dev--workflow'`);
     }
   }

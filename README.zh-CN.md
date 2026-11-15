@@ -65,7 +65,6 @@ node bin/dev-workflow.mjs uninstall --host codex --target /path/to/your-project
 
 - Grok Build CLI：可通过 `grok plugin validate /path/to/bundle` 验证根目录（英文）或打包后的 `dist/dev-workflow-<version>-<en|zh-CN>`；在独立临时 `HOME` 下已验证 `grok inspect --json` 可发现英文和中文各 8 个 Skill。
 - Pi Agent：直接在仓库根目录执行 `pi install /path/to/dev-workflow -l` 会按根 `package.json` 的 `pi.skills` 安装 `./skills`（英文版）。如需在项目启用简体中文版，请运行 `node bin/dev-workflow.mjs install --host pi --language zh-CN --target /path/to/your-project` 写入 `.pi/skills/`。
-- 实施契约见 [BILINGUAL_IMPLEMENTATION_PLAN.md](./docs/BILINGUAL_IMPLEMENTATION_PLAN.md)。
 
 ## 维护者检查与打包
 
@@ -87,7 +86,6 @@ npm run verify:dist       # 校验双语目录与 ZIP 条目、Skill 结构及 S
 ## 文档
 
 - [架构](./docs/ARCHITECTURE.md)
-- [实施方案](./docs/IMPLEMENTATION_PLAN.md)
 - [兼容性概览](./docs/COMPATIBILITY.md)
 - [安全与供应链](./docs/SECURITY.md)
 - [来源与上游归属](./docs/PROVENANCE.md)

@@ -85,7 +85,6 @@ For interactive live LLM behavioral evals (`codex`, `pi`), maintainers can run `
 ## Documentation
 
 - [Architecture](./docs/ARCHITECTURE.md)
-- [Implementation Plan](./docs/IMPLEMENTATION_PLAN.md)
 - [Compatibility Overview](./docs/COMPATIBILITY.md)
 - [Security & Supply Chain](./docs/SECURITY.md)
 - [Provenance & Upstream Attribution](./docs/PROVENANCE.md)

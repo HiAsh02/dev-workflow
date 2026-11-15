@@ -1,8 +1,7 @@
 # Architecture Overview
 
 > Source repository: `https://github.com/HiAsh02/dev-workflow`  
-> Authoritative implementation contract: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)  
-> Historical research drafts: [v0.1](./research/dev-workflow-research-and-architecture-v0.1.md), [v0.2](./research/dev-workflow-research-and-architecture-v0.2.md) (note: v0.2 referenced an earlier double-hyphen name `dev--workflow`, superseded by `HiAsh02/dev-workflow` across the repository and `plugin.json`).
+> Current implementation is defined by [English Skills](../skills/dw-start/SKILL.md), [Simplified Chinese Skills](../locales/zh-CN/skills/dw-start/SKILL.md), [schemas](../schemas/run-state.schema.json), [installer source](../lib/install-plan.mjs), and [cross-host verification](./COMPATIBILITY.md).
 
 ## Architectural Pillars
 

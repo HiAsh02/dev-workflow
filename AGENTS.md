@@ -2,7 +2,7 @@
 
 Rules for coding agents working inside `HiAsh02/dev-workflow`:
 
-1. **Read First**: Start from [docs/IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+1. **Read First**: Use [README.md](./README.md) (or [README.zh-CN.md](./README.zh-CN.md)), [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md), and [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md) for the current project. Inspect the live source, tests, and Git state before making changes; historical plans and prior chat summaries are not active implementation instructions.
 2. **Single Source of Truth**: English canonical `skills/dw-*/SKILL.md` (and `skills/dw-start/references/`, `templates/`) and their Simplified Chinese mirrors under `locales/zh-CN/` (`skills/`, `templates/`, plus `README.zh-CN.md`) must stay aligned in machine identifiers, permissions (`READ`/`LOCAL_EDIT`/`LOCAL_COMMIT`/`REMOTE_WRITE`/`DESTRUCTIVE`), and JSON schemas without replacing English originals. When installing via CLI, agents must prompt the user to choose `zh-CN` or `en` first rather than guessing from system/chat language. Do not fork workflow behavior in host-specific directories or generated `dist/` artifacts.
 3. **Authorization Boundaries**: Do not exceed the user's current request authorization. Code review does not authorize edits or commits; local edits do not authorize `git push`, PR creation, merges, releases, deployments, or deletions.
 4. **Evidence Before Claims**: Never report tests, checks, builds, or host compatibility as passing without running them after your final edit and recording exact commands, exit codes, and observed outputs. Keep untested hosts labeled `NOT_TESTED` or `BLOCKED`.
