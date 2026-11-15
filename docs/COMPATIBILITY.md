@@ -9,7 +9,13 @@
 
 ## Current Compatibility Summary (2026-11-15 — Beta / Partial Verification)
 
-> **Honesty notice**: Cross-platform CI (`ubuntu-latest` + `windows-latest` via [`.github/workflows/validate.yml`](../.github/workflows/validate.yml)), passive/CLI probes, deterministic packaging + ZIP entry verification, shared-root/transactional installer checks, and 12 live isolated behavioral eval runs (`SC-01`, `SC-06`, `SC-07`, `SC-08/REG-EVAL-01`, `SC-11`, `SC-12` covering `dw-start`, `dw-build`, `dw-review`, `dw-handoff`, `dw-ship`, plus earlier `dw-debug` fixture repros) on **Codex** (`codex-cli 0.144.5`) and **Pi** (`pi 1.5.2`) all passed. Live LLM `invoke` remains `BLOCKED` on **Grok Build** (unauthenticated in test environment) and `NOT_TESTED` in the **Antigravity** desktop Electron GUI runtime, and `dw-design` / `dw-plan` have `discover` + `STATIC` contract coverage only (`LIVE_LLM` not separately triggered), so overall release status remains `Beta / Partial`.
+> **Honesty notice**: Cross-platform CI (`ubuntu-latest` + `windows-latest` via [`.github/workflows/validate.yml`](../.github/workflows/validate.yml)) passed on baseline `ae0343fa` and must be re-run after committing R4 + bilingual updates. On the current working tree, passive/CLI probes, deterministic `en`/`zh-CN` packaging + ZIP entry verification, shared-root/R4 CAS/WAL tests, bilingual installer contract checks, and isolated-`HOME` `NATIVE_HOST` discovery (`grok inspect --json` for both `en` and `zh-CN`, all 8 skills) pass locally. Earlier `LIVE_LLM` behavioral evals (12 runs across `SC-01`, `SC-06`, `SC-07`, `SC-08/REG-EVAL-01`, `SC-11`, `SC-12` on `codex` `0.144.5` and `pi` `1.5.2`) passed on English skills prior to the R4/bilingual patch and have NOT been re-run for `zh-CN` or post-patch `main`; `dw-design`/`dw-plan` remain `discover` + `STATIC` only; **Grok Build** `LIVE_LLM` remains `BLOCKED` (unauthenticated); **Antigravity** IDE runtime `invoke` remains `NOT_TESTED`. Overall release status remains `Beta / Partial`.
+
+## Bilingual Language Support
+
+- **Languages**: `en` (canonical `skills/`, `templates/`, `README.md`) and `zh-CN` (`locales/zh-CN/skills/`, `locales/zh-CN/templates/`, `README.zh-CN.md`).
+- **Dist bundles**: `npm run pack` emits separate canonical layouts `dist/dev-workflow-<version>-en(.zip)` and `dist/dev-workflow-<version>-zh-CN(.zip)`, each placing only its selected language under `skills/`.
+- **Native Pi package note**: `package.json` `"pi": { "skills": ["./skills"] }` serves English when running `pi install <repo-root> -l` directly from the source repo; use `node bin/dev-workflow.mjs install --host pi --language zh-CN` to install Simplified Chinese into `.pi/skills/`.
 
 | Host | Binary / Version | Preferred Mode | CLI / Install / Uninstall | Discovery | Live LLM Invoke (`LIVE_LLM`) | Report |
 |---|---|---|---|---|---|---|

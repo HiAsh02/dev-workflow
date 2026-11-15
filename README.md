@@ -3,7 +3,8 @@
 Portable, evidence-driven software engineering workflows packaged as **Agent Skills** (`skills/dw-*/SKILL.md`) inside an **Agent Plugins v1.0.0** manifest (`plugin.json`).
 
 Repository: `https://github.com/HiAsh02/dev-workflow` (Private)  
-Current release status: `0.1.0` (`Beta / Partial` cross-host verification — see [COMPATIBILITY.md](./docs/COMPATIBILITY.md))
+Current release status: `0.1.0` (`Beta / Partial` cross-host verification — see [COMPATIBILITY.md](./docs/COMPATIBILITY.md))  
+Languages: English (`en`, canonical `skills/`) and Simplified Chinese (`zh-CN`, mirrored `locales/zh-CN/skills/` + [README.zh-CN.md](./README.zh-CN.md))
 
 ## Key Principles
 
@@ -42,30 +43,27 @@ Clone your authorized copy of `HiAsh02/dev-workflow` locally, inspect the change
 # 1. Inspect local host binaries (never edits target files; runs `--version` for codex/grok/pi)
 node bin/dev-workflow.mjs doctor --host all
 
-# 2. Preview target file changes without writing to disk
-node bin/dev-workflow.mjs install --host codex --target /path/to/your-project --dry-run
+# 2. Preview target file changes without writing to disk (explicit `--language <en|zh-CN>` required in non-TTY; interactive TTY prompts 1/2)
+node bin/dev-workflow.mjs install --host codex --language en --target /path/to/your-project --dry-run
 
-# 3. Install or update into project scope (no-clobber default; pass --adopt or --upgrade-shared explicitly when coordinating shared directories)
-node bin/dev-workflow.mjs install --host codex --target /path/to/your-project
+# 3. Install or update into project scope (no-clobber default; `update` preserves the installed language unless `--language` is changed explicitly)
+node bin/dev-workflow.mjs install --host codex --language en --target /path/to/your-project
+node bin/dev-workflow.mjs update --host codex --target /path/to/your-project
 
-# 4. List, recover interrupted transactions, or safely uninstall unmodified owned files (with .apply.lock + WAL journal rollback safety)
+# 4. List (shows active `language`), recover interrupted transactions, or safely uninstall unmodified owned files
 node bin/dev-workflow.mjs list --target /path/to/your-project
 node bin/dev-workflow.mjs recover --target /path/to/your-project --dry-run
 node bin/dev-workflow.mjs uninstall --host codex --target /path/to/your-project
 ```
 
-**Pending R3 hardening (not yet published):** Recovery WAL v2 verifies the transaction ID,
-package path allowlist and per-entry before/after hashes. For ambiguous operations, modified
-post-crash files, or older WAL v1, `recover` deliberately refuses automatic replay and
-preserves the journal and backups for manual inspection. This is a conservative behavior,
-not a claim of guaranteed crash-safe recovery on every filesystem. Do not use `--force-unlock`
-when a known writer is alive. Cross-host upgrades now coordinate added and removed reference
-files as well as the preexisting files. See the accompanying R3 patch notes before deploying.
+**Bilingual & Hardening Guarantees:**
+- **Single enabled language per target**: Installing `en` or `zh-CN` populates the host's canonical `skills/dw-*/SKILL.md` path without duplicate skill directories. Cross-host shared targets (e.g., `codex` + `grok-build` on `.agents/skills/`) refuse mixing languages (`CONFLICT` even with `--upgrade-shared`); uninstall existing consumers before reinstalling another language.
+- **Plan-to-Apply CAS (`PLAN_STALE`)**: `apply` re-verifies primary and sibling ownership ledger snapshots inside `.apply.lock` before creating any WAL journal or writing target files.
+- **Fail-closed WAL recovery & partial-uninstall reporting**: WAL v2 records transaction ID, `language`, `package_digest`, verified `source_manifest` (for custom/legacy sources), and before/after SHA-256 checksums. Ambiguous `pending` mutations, post-crash user edits, unoriginated journals, or WAL/ledger language mismatches refuse automatic overwrite and retain backups/journal for manual inspection. Legacy ledgers without `source_manifest` report `partial_uninstall`, `remaining_owned_files`, and `manual_remediation`. Do not pass `--force-unlock` while a known writer is active.
 
-
-Installing into `--scope user` requires explicit `--confirm-user`. Preexisting byte-identical unowned files are skipped for ownership (`preexisting_identical_unowned`) and preserved on `uninstall` unless `--adopt` is passed explicitly; shared directories (e.g., `codex` + `grok-build` on `.agents/skills/`) retain files still referenced by sibling install ledgers during single-host uninstall. Native host commands verified in isolated sandboxes:
-- Grok Build CLI: `grok plugin validate /path/to/dev-workflow` and `grok plugin install /path/to/dev-workflow --trust`
-- Pi Agent: `pi install /path/to/dev-workflow -l`
+Installing into `--scope user` requires explicit `--confirm-user`. Preexisting byte-identical unowned files are skipped for ownership (`preexisting_identical_unowned`) and preserved on `uninstall` unless `--adopt` is passed explicitly; shared directories retain files still referenced by sibling install ledgers during single-host uninstall. Native host commands verified in isolated sandboxes:
+- Grok Build CLI: `grok plugin validate /path/to/dev-workflow` (or `dist/dev-workflow-<version>-<en|zh-CN>`) and `grok plugin install /path/to/bundle --trust`
+- Pi Agent: `pi install /path/to/dev-workflow -l` reads root `package.json`'s `pi.skills` (`./skills`, English). Use `node bin/dev-workflow.mjs install --host pi --language zh-CN --target <repo>` to install Simplified Chinese into `.pi/skills/`.
 
 ## Maintainer Checks & Packaging
 
@@ -78,8 +76,8 @@ npm test                  # contract-static + installer-integration (contract + 
 npm run test:safety       # installer-integration + recovery/permission/containment boundaries
 npm run test:scenario     # contract-static: SC-01..SC-12 specs & fixture smoke tests
 npm run test:eval         # agent-behavior-eval (offline deterministic sandbox & REG-EVAL-01 harness)
-npm run pack              # build deterministic release bundle + ZIP
-npm run verify:dist       # verify extracted tree & ZIP entry SHA-256 sync
+npm run pack              # build deterministic en & zh-CN bundles + ZIPs in dist/
+npm run verify:dist       # verify extracted trees, ZIP entries, skills, and SHA-256 sync for en & zh-CN
 ```
 
 For interactive live LLM behavioral evals (`codex`, `pi`), maintainers can run `npm run eval:live` (`scripts/run-live-evals.mjs`). Note that `validate`'s `scanSensitiveArtifacts` check is a deterministic regex/size pre-flight guard rather than semantic DLP; see [Security & Supply Chain](./docs/SECURITY.md) for the complete trust model.

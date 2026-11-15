@@ -13,12 +13,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
 const schemaPath = path.join(repoRoot, "schemas", "run-state.schema.json");
 
-test("templates/run-state.json satisfies run-state.schema.json", () => {
-  const sample = JSON.parse(
-    fs.readFileSync(path.join(repoRoot, "templates", "run-state.json"), "utf8")
-  );
-  const res = validateRunStateObject(sample, schemaPath);
-  assert.equal(res.valid, true, res.errors.join("; "));
+test("templates/run-state.json and locales/zh-CN/templates/run-state.json satisfy run-state.schema.json", () => {
+  for (const rel of ["templates/run-state.json", "locales/zh-CN/templates/run-state.json"]) {
+    const sample = JSON.parse(fs.readFileSync(path.join(repoRoot, rel), "utf8"));
+    const res = validateRunStateObject(sample, schemaPath);
+    assert.equal(res.valid, true, `${rel}: ${res.errors.join("; ")}`);
+  }
 });
 
 test("run-state rejects placeholder SHA strings and cyclic task DAGs", () => {

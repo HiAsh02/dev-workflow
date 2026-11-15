@@ -11,10 +11,15 @@ import { scanSensitiveArtifacts } from "../../lib/integrity.mjs";
 import crypto from "node:crypto";
 import { buildDeterministicZip } from "../../lib/zip.mjs";
 
+import { validatePluginManifest } from "../../lib/manifest.mjs";
+import { validateSkillsCollection } from "../../lib/skills.mjs";
+import { readZipEntries } from "../../lib/zip.mjs";
+import { CORE_SKILLS } from "../../scripts/validate.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
 
-test("buildPackage produces reproducible zip and passes source sync verification", () => {
+test("buildPackage produces reproducible dual-language zips and passes source sync verification", () => {
   const outA = fs.mkdtempSync(path.join(os.tmpdir(), "dw-pack-a-"));
   const outB = fs.mkdtempSync(path.join(os.tmpdir(), "dw-pack-b-"));
 
@@ -24,6 +29,8 @@ test("buildPackage produces reproducible zip and passes source sync verification
 
     assert.equal(resA.zipSha256, resB.zipSha256);
     assert.deepEqual(resA.bundleHashes, resB.bundleHashes);
+    assert.equal(resA.bundles["zh-CN"].zipSha256, resB.bundles["zh-CN"].zipSha256);
+    assert.deepEqual(resA.bundles["zh-CN"].bundleHashes, resB.bundles["zh-CN"].bundleHashes);
 
     const syncOk = verifySourceSync(repoRoot, { outRoot: outA });
     assert.equal(syncOk.valid, true, syncOk.errors.join("; "));
@@ -36,6 +43,53 @@ test("buildPackage produces reproducible zip and passes source sync verification
   } finally {
     fs.rmSync(outA, { recursive: true, force: true });
     fs.rmSync(outB, { recursive: true, force: true });
+  }
+});
+
+test("L-08: language-specific zips unpack to unique canonical 8-skill layouts, pass schema validation, and reject zh-CN tamper", () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), "dw-l08-"));
+  const extractRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dw-l08-extract-"));
+  const schemaPath = path.join(repoRoot, "schemas/plugin-v1.0.0.schema.json");
+  try {
+    const built = buildPackage(repoRoot, { outRoot: out });
+    for (const locale of ["en", "zh-CN"]) {
+      const b = built.bundles[locale];
+      assert.equal(b.bundleName, `dev-workflow-${built.version}-${locale}`);
+      const entries = readZipEntries(fs.readFileSync(b.zipPath));
+      const dest = path.join(extractRoot, locale);
+      for (const entry of entries) {
+        const target = path.join(dest, entry.path);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, entry.data);
+      }
+      const rootBundle = path.join(dest, b.bundleName);
+      assert.equal(fs.existsSync(path.join(rootBundle, "locales")), false);
+      assert.equal(
+        fs.existsSync(path.join(rootBundle, "README.zh-CN.md")),
+        locale === "zh-CN"
+      );
+      const manifest = JSON.parse(fs.readFileSync(path.join(rootBundle, "plugin.json"), "utf8"));
+      const mRes = validatePluginManifest(manifest, schemaPath);
+      assert.equal(mRes.valid, true, mRes.errors.join("; "));
+      const sRes = validateSkillsCollection(path.join(rootBundle, "skills"), {
+        expectedSkills: CORE_SKILLS,
+        requireStandardSections: true,
+        locale,
+      });
+      assert.equal(sRes.valid, true, `[${locale}] ${sRes.errors.join("; ")}`);
+    }
+
+    // Tampering zh-CN bundle must fail verifySourceSync
+    fs.appendFileSync(
+      path.join(built.bundles["zh-CN"].bundleDir, "skills/dw-start/SKILL.md"),
+      "\n<!-- tampered -->\n"
+    );
+    const tamperedSync = verifySourceSync(repoRoot, { outRoot: out });
+    assert.equal(tamperedSync.valid, false);
+    assert.ok(tamperedSync.errors.some((e) => e.includes("[zh-CN]") && e.includes("Hash mismatch")));
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true });
+    fs.rmSync(extractRoot, { recursive: true, force: true });
   }
 });
 
@@ -60,7 +114,7 @@ test("REG-ZIP-01: verifySourceSync rejects tampered zip entries even if SHA256SU
   const out = fs.mkdtempSync(path.join(os.tmpdir(), "dw-zip-reg-"));
   try {
     const built = buildPackage(repoRoot, { outRoot: out });
-    const bundleName = `dev-workflow-${built.version}`;
+    const bundleName = built.bundleName;
     const tamperedZip = buildDeterministicZip([
       {
         path: `${bundleName}/plugin.json`,

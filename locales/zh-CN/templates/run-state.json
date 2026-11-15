@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "task_id": "20261115-example-feature",
+  "intent": "feature",
+  "mode": "standard",
+  "status": "planned",
+  "project_root": ".",
+  "base_commit": null,
+  "head_commit": null,
+  "scope_summary": "实现一个经过验证的垂直任务切片",
+  "approval_reference": "仅供审计参考——绝不授予持续有效的提交或远程写入权限",
+  "steps": [
+    {
+      "id": "F01",
+      "status": "pending",
+      "depends_on": [],
+      "evidence": []
+    }
+  ],
+  "checks": [],
+  "blockers": [],
+  "updated_at": "2026-11-15T00:00:00Z"
+}

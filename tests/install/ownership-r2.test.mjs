@@ -364,7 +364,7 @@ test("R2-REG-CRASH-01/02: SIGKILL mid-install and mid-uninstall persist recovera
     // Subsequent normal install MUST fail-closed and NOT wipe journal
     const blockedInstall = spawnSync(
       process.execPath,
-      [cliPath, "install", "--host", "codex", "--target", project, "--format", "json"],
+      [cliPath, "install", "--host", "codex", "--language", "en", "--target", project, "--format", "json"],
       { encoding: "utf8" }
     );
     assert.notEqual(blockedInstall.status, 0);

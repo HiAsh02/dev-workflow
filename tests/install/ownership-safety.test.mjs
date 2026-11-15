@@ -377,7 +377,18 @@ test("REG-MODE-01: uninstall --mode auto discovers non-default installed mode cl
   try {
     const installRes = spawnSync(
       process.execPath,
-      [cliPath, "install", "--host", "antigravity", "--mode", "skills", "--target", project],
+      [
+        cliPath,
+        "install",
+        "--host",
+        "antigravity",
+        "--mode",
+        "skills",
+        "--language",
+        "en",
+        "--target",
+        project,
+      ],
       { encoding: "utf8" }
     );
     assert.equal(installRes.status, 0, installRes.stderr);

@@ -29,7 +29,19 @@ test("install --dry-run is idempotent and writes zero files to disk", () => {
     const before = snapshotTree(project);
     const res = spawnSync(
       process.execPath,
-      [cliPath, "install", "--host", "codex", "--target", project, "--dry-run", "--format", "json"],
+      [
+        cliPath,
+        "install",
+        "--host",
+        "codex",
+        "--language",
+        "en",
+        "--target",
+        project,
+        "--dry-run",
+        "--format",
+        "json",
+      ],
       { encoding: "utf8" }
     );
     assert.equal(res.status, 0, res.stderr);

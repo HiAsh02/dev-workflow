@@ -9,6 +9,7 @@ import {
   sha256Buffer,
   walkContainedFiles,
 } from "../lib/safe-files.mjs";
+import { SUPPORTED_LOCALES } from "../lib/skills.mjs";
 import { buildDeterministicZip } from "../lib/zip.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,19 +17,10 @@ const repoRoot = path.resolve(__dirname, "..");
 
 const TOP_LEVEL_FILES = ["plugin.json", "VERSION", "LICENSE", "README.md", "CHANGELOG.md"];
 
-export function buildPackage(rootDir = repoRoot, { outRoot = path.join(rootDir, "dist") } = {}) {
-  const val = runValidation(rootDir);
-  if (!val.valid) {
-    throw new Error(`Validation failed before packaging:\n${val.errors.join("\n")}`);
-  }
-
-  const version = fs.readFileSync(path.join(rootDir, "VERSION"), "utf8").trim();
-  const bundleName = `dev-workflow-${version}`;
-  const bundleDir = path.join(outRoot, bundleName);
-  const zipPath = path.join(outRoot, `${bundleName}.zip`);
-
+function collectBundleFiles(rootDir, locale) {
+  const topFiles = locale === "zh-CN" ? [...TOP_LEVEL_FILES, "README.zh-CN.md"] : TOP_LEVEL_FILES;
   const filesToCopy = [];
-  for (const rel of TOP_LEVEL_FILES) {
+  for (const rel of topFiles) {
     const abs = path.join(rootDir, rel);
     if (!fs.existsSync(abs)) {
       throw new Error(`Missing required package file: ${rel}`);
@@ -36,24 +28,40 @@ export function buildPackage(rootDir = repoRoot, { outRoot = path.join(rootDir, 
     filesToCopy.push({ rel, abs });
   }
 
-  const skillFiles = walkContainedFiles(path.join(rootDir, "skills")).map((rel) => ({
+  const skillsSrcDir =
+    locale === "zh-CN"
+      ? path.join(rootDir, "locales", "zh-CN", "skills")
+      : path.join(rootDir, "skills");
+  const skillFiles = walkContainedFiles(skillsSrcDir).map((rel) => ({
     rel: `skills/${rel}`,
-    abs: path.join(rootDir, "skills", rel),
+    abs: path.join(skillsSrcDir, rel),
   }));
   filesToCopy.push(...skillFiles);
   filesToCopy.sort((a, b) => a.rel.localeCompare(b.rel, "en"));
+  return filesToCopy;
+}
+
+function buildSingleLocaleBundle({ rootDir, outRoot, version, locale }) {
+  const bundleName = `dev-workflow-${version}-${locale}`;
+  const bundleDir = path.join(outRoot, bundleName);
+  const zipPath = path.join(outRoot, `${bundleName}.zip`);
+  const filesToCopy = collectBundleFiles(rootDir, locale);
 
   const collisions = findCaseCollisions(filesToCopy.map((f) => f.rel));
   if (collisions.length > 0) {
-    throw new Error(`Case collisions detected: ${JSON.stringify(collisions)}`);
+    throw new Error(`Case collisions detected (${locale}): ${JSON.stringify(collisions)}`);
   }
 
   const secretFindings = scanSensitiveArtifacts(
     rootDir,
-    filesToCopy.map((f) => f.rel)
+    filesToCopy.map((f) =>
+      locale === "zh-CN" && f.rel.startsWith("skills/")
+        ? `locales/zh-CN/${f.rel}`
+        : f.rel
+    )
   );
   if (secretFindings.length > 0) {
-    throw new Error(`Sensitive artifact scan failed:\n${secretFindings.join("\n")}`);
+    throw new Error(`Sensitive artifact scan failed (${locale}):\n${secretFindings.join("\n")}`);
   }
 
   fs.rmSync(bundleDir, { recursive: true, force: true });
@@ -76,21 +84,58 @@ export function buildPackage(rootDir = repoRoot, { outRoot = path.join(rootDir, 
     `${zipSha256}  ${bundleName}.zip`,
     ...Object.entries(bundleHashes).map(([rel, hash]) => `${hash}  ${bundleName}/${rel}`),
   ];
-  atomicWriteFile(path.join(outRoot, "SHA256SUMS.txt"), `${checksumLines.join("\n")}\n`);
 
   return {
-    version,
+    locale,
+    bundleName,
     bundleDir,
     zipPath,
     zipSha256,
     fileCount: filesToCopy.length,
     bundleHashes,
+    checksumLines,
+  };
+}
+
+export function buildPackage(rootDir = repoRoot, { outRoot = path.join(rootDir, "dist") } = {}) {
+  const val = runValidation(rootDir);
+  if (!val.valid) {
+    throw new Error(`Validation failed before packaging:\n${val.errors.join("\n")}`);
+  }
+
+  const version = fs.readFileSync(path.join(rootDir, "VERSION"), "utf8").trim();
+
+  // Remove legacy unsuffixed dist artifacts if present from earlier versions.
+  fs.rmSync(path.join(outRoot, `dev-workflow-${version}`), { recursive: true, force: true });
+  fs.rmSync(path.join(outRoot, `dev-workflow-${version}.zip`), { force: true });
+
+  const bundles = {};
+  const allChecksumLines = [];
+  for (const locale of SUPPORTED_LOCALES) {
+    const built = buildSingleLocaleBundle({ rootDir, outRoot, version, locale });
+    bundles[locale] = built;
+    allChecksumLines.push(...built.checksumLines);
+  }
+  atomicWriteFile(path.join(outRoot, "SHA256SUMS.txt"), `${allChecksumLines.join("\n")}\n`);
+
+  const primary = bundles.en;
+  return {
+    version,
+    bundleName: primary.bundleName,
+    bundleDir: primary.bundleDir,
+    zipPath: primary.zipPath,
+    zipSha256: primary.zipSha256,
+    fileCount: primary.fileCount,
+    bundleHashes: primary.bundleHashes,
+    bundles,
   };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const res = buildPackage(repoRoot);
-  console.log(
-    `Packaged ${res.fileCount} files to ${res.bundleDir} and ${res.zipPath} (sha256: ${res.zipSha256})`
-  );
+  for (const b of Object.values(res.bundles)) {
+    console.log(
+      `Packaged [${b.locale}] ${b.fileCount} files to ${b.bundleDir} and ${b.zipPath} (sha256: ${b.zipSha256})`
+    );
+  }
 }

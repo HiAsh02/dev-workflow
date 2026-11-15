@@ -110,3 +110,35 @@ test("validateSkillsCollection detects duplicate skill names across case", () =>
     fs.rmSync(base, { recursive: true, force: true });
   }
 });
+
+test("validateSkillDir supports zh-CN section headings and rejects unsupported locale or missing zh-CN heading", () => {
+  const zhSections = [
+    "目的",
+    "适用场景",
+    "不适用场景",
+    "输入",
+    "能力要求",
+    "执行步骤",
+    "输出",
+    "失败处理与降级策略",
+    "授权",
+    "验证",
+  ];
+  const zhBody = zhSections.map((h) => `## ${h}\n内容。`).join("\n\n");
+  const base = makeTempSkill({
+    "zh-skill/SKILL.md": `---\nname: zh-skill\ndescription: 中文技能测试。\n---\n${zhBody}\n见 [参考](./references/note.md)。\n`,
+    "zh-skill/references/note.md": "# 说明\n",
+  });
+  try {
+    const ok = validateSkillDir(path.join(base, "zh-skill"), { locale: "zh-CN" });
+    assert.equal(ok.valid, true, ok.errors.join("; "));
+
+    const wrongLocale = validateSkillDir(path.join(base, "zh-skill"), { locale: "en" });
+    assert.equal(wrongLocale.valid, false);
+    assert.ok(wrongLocale.errors.some((e) => e.includes("Missing required section '## Purpose'")));
+
+    assert.throws(() => validateSkillDir(path.join(base, "zh-skill"), { locale: "fr" }), /Unsupported skill locale/);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});

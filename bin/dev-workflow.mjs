@@ -1,6 +1,8 @@
 #!/usr/bin/env node
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import readline from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { detectHost, SUPPORTED_HOSTS } from "../lib/host-probes.mjs";
@@ -12,11 +14,89 @@ import {
   buildUninstallPlan,
   inspectPendingRecovery,
   listInstalledPackages,
+  normalizeLanguage,
+  SUPPORTED_LANGUAGES,
 } from "../lib/install-plan.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultPackageRoot = path.resolve(__dirname, "..");
 const defaultHostsDir = path.join(defaultPackageRoot, "hosts");
+
+export const BILINGUAL_LANGUAGE_PROMPT = [
+  "准备安装 dev-workflow。请选择使用语言 (Choose Skill Language):",
+  "",
+  "1. 简体中文 (zh-CN)：Skill 指令、执行手册和模板使用中文。",
+  "2. English (en)：使用原英文版本 (English Skills, playbooks, and templates).",
+  "",
+  "两个版本能力和安全规则保持一致。安装目标只会启用其中一种语言。请输入 1 或 2: ",
+].join("\n");
+
+export function parseLanguageSelection(answer) {
+  const trimmed = String(answer ?? "").trim();
+  if (trimmed === "1" || trimmed === "zh-CN") return "zh-CN";
+  if (trimmed === "2" || trimmed === "en") return "en";
+  throw new Error(
+    `Invalid language selection '${trimmed}'. Enter 1 (zh-CN) or 2 (en), or pass --language <en|zh-CN>.`
+  );
+}
+
+async function promptLanguageInteractive(format) {
+  const promptOut = format === "json" ? process.stderr : process.stdout;
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: promptOut,
+    terminal: true,
+  });
+  try {
+    const answer = await rl.question(BILINGUAL_LANGUAGE_PROMPT);
+    return parseLanguageSelection(answer);
+  } finally {
+    rl.close();
+  }
+}
+
+function findInstalledLanguage({ scopeRoot, host, scope, mode, hostsDir }) {
+  if (!fs.existsSync(scopeRoot)) return null;
+  const all = listInstalledPackages({ scopeRoot, hostsDir });
+  const matches = all.filter(
+    (inst) =>
+      inst.host === host &&
+      inst.scope === scope &&
+      (mode === "auto" || inst.mode === mode)
+  );
+  if (matches.length === 1) {
+    return matches[0].language ?? "en";
+  }
+  return null;
+}
+
+async function resolveCommandLanguage({
+  command,
+  requestedLanguage,
+  host,
+  scope,
+  mode,
+  scopeRoot,
+  hostsDir,
+  format,
+}) {
+  if (requestedLanguage !== undefined) {
+    return normalizeLanguage(requestedLanguage);
+  }
+  if (command === "update") {
+    const existingLang = findInstalledLanguage({ scopeRoot, host, scope, mode, hostsDir });
+    if (existingLang) {
+      return existingLang;
+    }
+  }
+  const interactive = Boolean(process.stdin.isTTY && (process.stdout.isTTY || process.stderr.isTTY));
+  if (!interactive) {
+    throw new Error(
+      `Missing required '--language <${SUPPORTED_LANGUAGES.join("|")}>' option in non-interactive mode. Ask the user to choose 'zh-CN' or 'en' first, then re-run with '--language <en|zh-CN>'.`
+    );
+  }
+  return promptLanguageInteractive(format);
+}
 
 function parseArgs(argv) {
   const positional = [];
@@ -82,15 +162,26 @@ function printOutput(obj, format) {
     }
     for (const inst of obj.installations) {
       console.log(
-        `${inst.host} [${inst.scope}/${inst.mode}] v${inst.source_version} -> ${inst.target_root} (${inst.file_count} files)`
+        `${inst.host} [${inst.scope}/${inst.mode}, lang=${inst.language ?? "en"}] v${inst.source_version} -> ${inst.target_root} (${inst.file_count} files)`
       );
     }
     return;
   }
   if (Array.isArray(obj.actions)) {
+    const langInfo = obj.language ? `, language=${obj.language}` : "";
     console.log(
-      `Plan (${obj.host}, scope=${obj.scope}, mode=${obj.mode}, supported=${obj.supported}):`
+      `Plan (${obj.host}, scope=${obj.scope}, mode=${obj.mode}${langInfo}, supported=${obj.supported}):`
     );
+    if (obj.language_change) {
+      console.log(
+        `  [LANGUAGE CHANGE] ${obj.language_change.from} -> ${obj.language_change.to}`
+      );
+    }
+    if (obj.partial_uninstall) {
+      console.log(
+        `  [PARTIAL UNINSTALL] ${(obj.remaining_owned_files ?? []).length} file(s) would remain retained`
+      );
+    }
     if (obj.reason) console.log(`  Note: ${obj.reason}`);
     for (const a of obj.actions) {
       console.log(`  [${a.kind}] ${a.relative_path}`);
@@ -100,6 +191,9 @@ function printOutput(obj, format) {
     }
     for (const p of obj.preserved ?? []) {
       console.log(`  [PRESERVED] ${p.relative_path}: ${p.reason}`);
+    }
+    for (const step of obj.manual_remediation ?? []) {
+      console.log(`  [MANUAL ACTION] ${step}`);
     }
     return;
   }
@@ -111,15 +205,15 @@ function printUsage() {
 
 Commands:
   doctor    --host <codex|antigravity|grok-build|pi|all> [--format json|text]
-  install   --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--upgrade-shared] [--dry-run] [--confirm-user] [--format json|text]
-  update    --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--upgrade-shared] [--dry-run] [--confirm-user] [--format json|text]
+  install   --host <host> --language <en|zh-CN> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--upgrade-shared] [--dry-run] [--confirm-user] [--format json|text]
+  update    --host <host> [--language <en|zh-CN>] [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--upgrade-shared] [--dry-run] [--confirm-user] [--format json|text]
   list      [--scope project|user] [--target dir] [--host host] [--format json|text]
   uninstall --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--dry-run] [--confirm-user] [--format json|text]
   recover   [--scope project|user] [--target dir] [--dry-run|--apply] [--force-unlock] [--confirm-user] [--format json|text]
 `);
 }
 
-function main() {
+async function main() {
   const { command, flags } = parseArgs(process.argv.slice(2));
   const format = flags.format ?? "text";
 
@@ -188,6 +282,17 @@ function main() {
   }
 
   if (command === "install" || command === "update") {
+    const requestedMode = flags.mode ?? "auto";
+    const resolvedLanguage = await resolveCommandLanguage({
+      command,
+      requestedLanguage: flags.language,
+      host,
+      scope,
+      mode: requestedMode,
+      scopeRoot,
+      hostsDir,
+      format,
+    });
     const plan = buildInstallPlan({
       sourceRoot,
       projectRoot: targetDir,
@@ -195,7 +300,8 @@ function main() {
       hostsDir,
       host,
       scope,
-      mode: flags.mode ?? "auto",
+      mode: requestedMode,
+      language: resolvedLanguage,
       sourceRef: getGitRef(sourceRoot),
       confirmUser: Boolean(flags["confirm-user"]),
       adopt: Boolean(flags.adopt),
@@ -246,9 +352,9 @@ function main() {
   throw new Error(`Unknown command '${command}'`);
 }
 
-try {
-  main();
-} catch (err) {
-  console.error(`ERROR: ${err.message}`);
-  process.exit(1);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error(`ERROR: ${err.message}`);
+    process.exit(1);
+  });
 }

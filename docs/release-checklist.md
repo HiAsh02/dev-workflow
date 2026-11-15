@@ -3,20 +3,20 @@
 - **Candidate Version**: `0.1.0` (`VERSION`, `plugin.json`, `package.json`, `CHANGELOG.md` synchronized)
 - **Repository**: `https://github.com/HiAsh02/dev-workflow` (Private)
 - **License**: `MIT` (`LICENSE` present, copyright `2026 HiAsh02`)
-- **Compatibility Tier**: `Beta / Partial` (GitHub Actions CI on `ubuntu-latest` & `windows-latest` verified `PASS`; full 8-dimension live verification `PASS` on `codex` & `pi`; `antigravity` 7/8 dimensions including `GetAllPlugins` discovery `PASS`, `invoke` `NOT_TESTED`; `grok-build` 7/8 dimensions `PASS`, `invoke` `BLOCKED` pending login)
+- **Compatibility Tier**: `Beta / Partial` (`codex` & `pi` 8-dimension English `LIVE_LLM` evals passed prior to R4/bilingual changes; offline `grok-build` `NATIVE_HOST` discovery verified for both `en` & `zh-CN` with `invoke` `BLOCKED`; `antigravity` `invoke` `NOT_TESTED`; CI on R4 + bilingual commits pending user authorization to commit/push)
 
 ## Gate Summary
 
-1. **Format & Contract (`VAL-01..05`)**:
-   - `npm run validate`
-   - `npm test` (`contract-static` + `installer-integration`, including `R2-*` source TOCTOU, shared-host upgrade/downgrade, transactional ledger rollback, and `SIGKILL` crash-recovery tests)
-   - `npm run pack && npm run verify:dist` (including decompressed ZIP central-directory & SHA-256 verification)
-2. **Safety, Installer & Behavioral Evals (`VAL-06..10`, `REG-*`, `R2-REG-*`)**:
+1. **Format & Contract (`VAL-01..05`, `L-01`, `L-08`)**:
+   - `npm run validate` (validates `en` + `zh-CN` skills, playbooks, `routing.md`, templates, and `run-state.json` schema parity)
+   - `npm test` (`contract-static` + `installer-integration`, including `R2-*`, `R3-*`, `R4-REG-*` CAS/manifest-drift/WAL-origin/partial-uninstall tests, and `L-01..L-10` bilingual tests)
+   - `npm run pack && npm run verify:dist` (builds and verifies both `dev-workflow-0.1.0-en(.zip)` and `dev-workflow-0.1.0-zh-CN(.zip)` + `dist/SHA256SUMS.txt`)
+2. **Safety, Installer & Behavioral Evals (`VAL-06..10`, `REG-*`, `R2/R3/R4-REG-*`)**:
    - `npm run test:safety`
-   - `npm run test:scenario` (`contract-static` specs & fixtures)
+   - `npm run test:scenario` (`contract-static` specs & bilingual `routing.md` / playbook checks)
    - `npm run test:eval` (`agent-behavior-eval` offline harness & `REG-EVAL-01`)
-   - `npm run eval:live` (`LIVE_LLM` behavioral suite on `codex` & `pi` -> [eval-traces-2026-11-15.md](./compatibility/eval-traces-2026-11-15.md))
-   - Deterministic path/size and regex token-prefix scan on `dist/dev-workflow-0.1.0/` and `dist/dev-workflow-0.1.0.zip`.
+   - `npm run eval:live` (`LIVE_LLM` behavioral suite on `codex` & `pi` -> historical traces in [eval-traces-2026-11-15.md](./compatibility/eval-traces-2026-11-15.md); rerun for `zh-CN` & post-patch HEAD before tagging)
+   - Deterministic path/size and regex token-prefix scan on `dist/dev-workflow-0.1.0-<en|zh-CN>/` and ZIP archives.
 3. **Host Compatibility Evidence**:
    - `codex` (`codex-cli 0.144.5`): `PASS` — 8/8 lifecycle dimensions (`6/8` skills live-invoked, `8/8` discovered; see `docs/compatibility/codex.md`)
    - `pi` (`1.5.2`): `PASS` — 8/8 lifecycle dimensions (`6/8` skills live-invoked, `8/8` discovered; see `docs/compatibility/pi.md`)

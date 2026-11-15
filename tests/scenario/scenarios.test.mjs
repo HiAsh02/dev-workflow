@@ -60,6 +60,22 @@ test("dw-start routing table covers all 7 canonical playbooks with zero circular
     // Playbooks must not recursively point back to dw-start
     assert.equal(pbText.includes("SKILL.md"), false, `${pb}.md should not recurse into SKILL.md`);
   }
+
+  const zhRoutingMd = fs.readFileSync(
+    path.join(repoRoot, "locales/zh-CN/skills/dw-start/references/routing.md"),
+    "utf8"
+  );
+  const zhLinks = extractRelativeLinks(zhRoutingMd);
+  for (const pb of expectedPlaybooks) {
+    assert.ok(
+      zhLinks.includes(`./playbooks/${pb}.md`),
+      `zh-CN routing.md must link to ./playbooks/${pb}.md`
+    );
+    const zhPbPath = path.join(repoRoot, "locales/zh-CN/skills/dw-start/references/playbooks", `${pb}.md`);
+    assert.ok(fs.existsSync(zhPbPath), `Missing zh-CN playbook ${pb}.md`);
+    const zhPbText = fs.readFileSync(zhPbPath, "utf8");
+    assert.equal(zhPbText.includes("SKILL.md"), false, `zh-CN ${pb}.md should not recurse into SKILL.md`);
+  }
 });
 
 test("SC-04 fixture bug-regression reproduces deterministic failure and SC fixture sample-app passes", () => {

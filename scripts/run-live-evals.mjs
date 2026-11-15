@@ -98,7 +98,7 @@ function createScenarioSandbox(host, scenarioId) {
 
   const installRes = runCmd(
     process.execPath,
-    [cliPath, "install", "--host", host, "--target", workDir, "--format", "json"],
+    [cliPath, "install", "--host", host, "--language", "en", "--target", workDir, "--format", "json"],
     { cwd: repoRoot, timeout: 15_000 }
   );
   if (installRes.status !== 0) {

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validatePluginManifest, validateVersionSync } from "../lib/manifest.mjs";
 import { validateSkillsCollection } from "../lib/skills.mjs";
+import { validateRunStateObject } from "../lib/state.mjs";
 import { findCaseCollisions, walkContainedFiles } from "../lib/safe-files.mjs";
 
 export const CORE_SKILLS = [
@@ -19,10 +20,26 @@ export const CORE_SKILLS = [
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
+function checkRelativeParity(baseDir, localizedDir, label, errors) {
+  const baseFiles = new Set(walkContainedFiles(baseDir));
+  const locFiles = new Set(walkContainedFiles(localizedDir));
+  for (const rel of baseFiles) {
+    if (!locFiles.has(rel)) {
+      errors.push(`Localized ${label} missing mirror file '${rel}'`);
+    }
+  }
+  for (const rel of locFiles) {
+    if (!baseFiles.has(rel)) {
+      errors.push(`Localized ${label} has extra unmirrored file '${rel}'`);
+    }
+  }
+}
+
 function checkStaleRepoNames(rootDir) {
   const errors = [];
   const checkFiles = [
     "README.md",
+    "README.zh-CN.md",
     "AGENTS.md",
     "plugin.json",
     "package.json",
@@ -76,8 +93,60 @@ export function runValidation(rootDir = repoRoot, { allowPendingSkills = false }
     const sRes = validateSkillsCollection(skillsDir, {
       expectedSkills: CORE_SKILLS,
       requireStandardSections: true,
+      locale: "en",
     });
     if (!sRes.valid) errors.push(...sRes.errors);
+  }
+
+  const zhSkillsDir = path.join(rootDir, "locales", "zh-CN", "skills");
+  if (!fs.existsSync(zhSkillsDir)) {
+    if (allowPendingSkills) {
+      warnings.push("locales/zh-CN/skills/ directory not present");
+    } else {
+      errors.push("Missing locales/zh-CN/skills/ directory");
+    }
+  } else {
+    const zhRes = validateSkillsCollection(zhSkillsDir, {
+      expectedSkills: CORE_SKILLS,
+      requireStandardSections: true,
+      locale: "zh-CN",
+    });
+    if (!zhRes.valid) {
+      errors.push(...zhRes.errors.map((e) => `[zh-CN] ${e}`));
+    }
+    if (fs.existsSync(skillsDir)) {
+      checkRelativeParity(skillsDir, zhSkillsDir, "skills (zh-CN)", errors);
+    }
+  }
+
+  const templatesDir = path.join(rootDir, "templates");
+  const zhTemplatesDir = path.join(rootDir, "locales", "zh-CN", "templates");
+  if (!allowPendingSkills) {
+    if (!fs.existsSync(zhTemplatesDir)) {
+      errors.push("Missing locales/zh-CN/templates/ directory");
+    } else if (fs.existsSync(templatesDir)) {
+      checkRelativeParity(templatesDir, zhTemplatesDir, "templates (zh-CN)", errors);
+    }
+    if (!fs.existsSync(path.join(rootDir, "README.zh-CN.md"))) {
+      errors.push("Missing README.zh-CN.md");
+    }
+  }
+
+  const runStateSchema = path.join(rootDir, "schemas", "run-state.schema.json");
+  if (fs.existsSync(runStateSchema)) {
+    for (const relState of ["templates/run-state.json", "locales/zh-CN/templates/run-state.json"]) {
+      const absState = path.join(rootDir, relState);
+      if (!fs.existsSync(absState)) continue;
+      try {
+        const parsedState = JSON.parse(fs.readFileSync(absState, "utf8"));
+        const rsRes = validateRunStateObject(parsedState, runStateSchema);
+        if (!rsRes.valid) {
+          errors.push(...rsRes.errors.map((e) => `${relState}: ${e}`));
+        }
+      } catch (err) {
+        errors.push(`${relState}: invalid JSON (${err.message})`);
+      }
+    }
   }
 
   const allRepoFiles = walkContainedFiles(rootDir).filter(

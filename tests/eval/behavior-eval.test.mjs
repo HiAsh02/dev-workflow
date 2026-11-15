@@ -157,7 +157,7 @@ test("REG-EVAL-01 isolated sandbox enforces dirty-worktree preservation, side-ef
 
   const installRes = spawnSync(
     process.execPath,
-    [cliPath, "install", "--host", "codex", "--target", tmpRoot, "--format", "json"],
+    [cliPath, "install", "--host", "codex", "--language", "en", "--target", tmpRoot, "--format", "json"],
     { encoding: "utf8" }
   );
   assert.equal(installRes.status, 0, installRes.stderr);
