@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HiAsh02/dev-workflow/schemas/run-state.schema.json",
+  "title": "dev-workflow Task Ledger (run-state.json v1)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "intent",
+    "mode",
+    "status",
+    "project_root",
+    "base_commit",
+    "head_commit",
+    "scope_summary",
+    "approval_reference",
+    "steps",
+    "checks",
+    "blockers",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+    },
+    "intent": {
+      "type": "string",
+      "enum": ["investigate", "feature", "bug-fix", "refactor", "review", "ship", "resume"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["quick", "standard", "rigorous"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "intake",
+        "designing",
+        "awaiting_approval",
+        "planned",
+        "executing",
+        "verifying",
+        "reviewing",
+        "done",
+        "blocked",
+        "cancelled"
+      ]
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_commit": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "head_commit": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "scope_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "in_progress", "done", "blocked", "skipped"]
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "command", "result", "recorded_at"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "command": { "type": "string", "minLength": 1 },
+          "result": {
+            "type": "string",
+            "enum": ["passed", "failed", "not_run", "blocked"]
+          },
+          "recorded_at": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "updated_at": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

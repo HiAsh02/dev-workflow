@@ -1,0 +1,28 @@
+{
+  "host": "codex",
+  "displayName": "OpenAI Codex (CLI / App)",
+  "binary": "codex",
+  "versionArgs": ["--version"],
+  "versionPattern": "codex(?:-cli)?\\s+([0-9]+\\.[0-9]+\\.[0-9]+[^\\s]*)",
+  "distinctFrom": [],
+  "supportedModes": ["skills"],
+  "defaultMode": {
+    "project": "skills",
+    "user": "skills"
+  },
+  "targets": {
+    "project": {
+      "skillsDir": ".agents/skills",
+      "pluginDir": null,
+      "confidence": "verified_doc_and_local_cli",
+      "source": "https://developers.openai.com/codex/skills"
+    },
+    "user": {
+      "skillsDir": ".agents/skills",
+      "pluginDir": null,
+      "confidence": "verified_doc",
+      "source": "https://developers.openai.com/codex/skills"
+    }
+  },
+  "notes": "Codex CLI scans .agents/skills from CWD to repository root and ~/.agents/skills at user scope. 'codex plugin add' requires a configured marketplace snapshot, so direct local/private repository installs use skills mode."
+}

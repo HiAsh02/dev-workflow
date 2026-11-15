@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "task_id": "20261115-example-feature",
+  "intent": "feature",
+  "mode": "standard",
+  "status": "planned",
+  "project_root": ".",
+  "base_commit": null,
+  "head_commit": null,
+  "scope_summary": "Implement one verified vertical slice",
+  "approval_reference": "Audit note only - never grants standing remote or commit authorization",
+  "steps": [
+    {
+      "id": "F01",
+      "status": "pending",
+      "depends_on": [],
+      "evidence": []
+    }
+  ],
+  "checks": [],
+  "blockers": [],
+  "updated_at": "2026-11-15T00:00:00Z"
+}

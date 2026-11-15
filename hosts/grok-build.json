@@ -1,0 +1,30 @@
+{
+  "host": "grok-build",
+  "displayName": "xAI Grok Build CLI",
+  "binary": "grok",
+  "versionArgs": ["--version"],
+  "versionPattern": "^grok\\s+([0-9]+\\.[0-9]+\\.[0-9]+[^\\s]*)",
+  "distinctFrom": ["grok-bot", "third-party grok-cli"],
+  "supportedModes": ["skills"],
+  "defaultMode": {
+    "project": "skills",
+    "user": "skills"
+  },
+  "targets": {
+    "project": {
+      "skillsDir": ".agents/skills",
+      "altSkillsDir": ".grok/skills",
+      "pluginDir": null,
+      "confidence": "verified_doc_and_local_cli",
+      "source": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md"
+    },
+    "user": {
+      "skillsDir": ".grok/skills",
+      "altSkillsDir": ".agents/skills",
+      "pluginDir": null,
+      "confidence": "verified_doc_and_local_cli",
+      "source": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md"
+    }
+  },
+  "notes": "xAI Grok Build CLI ('grok') discovers .agents/skills and .grok/skills at repo/CWD scope and validates Agent Plugins manifests via 'grok plugin validate'. Native 'grok plugin install <path> --trust' installs at user scope. Distinct from Grok Bot."
+}

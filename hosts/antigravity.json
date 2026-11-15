@@ -1,0 +1,28 @@
+{
+  "host": "antigravity",
+  "displayName": "Google Antigravity (App / CLI / IDE)",
+  "binary": "agy",
+  "versionArgs": [],
+  "versionPattern": null,
+  "distinctFrom": [],
+  "supportedModes": ["plugin", "skills"],
+  "defaultMode": {
+    "project": "plugin",
+    "user": "plugin"
+  },
+  "targets": {
+    "project": {
+      "skillsDir": ".agents/skills",
+      "pluginDir": ".agents/plugins/dev-workflow",
+      "confidence": "verified_doc_and_builtin_guide",
+      "source": "https://antigravity.google/docs/skills"
+    },
+    "user": {
+      "skillsDir": ".gemini/config/skills",
+      "pluginDir": ".gemini/config/plugins/dev-workflow",
+      "confidence": "verified_doc_and_builtin_guide",
+      "source": "https://antigravity.google/docs/skills"
+    }
+  },
+  "notes": "Antigravity discovers workspace plugins in .agents/plugins/<name>/plugin.json + skills/ and workspace skills in .agents/skills/. Launcher binary 'agy' starts the desktop app and is not invoked during passive doctor probes."
+}

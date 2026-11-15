@@ -1,0 +1,31 @@
+{
+  "name": "dev-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable, evidence-driven software development workflows for coding agents",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "dev-workflow": "./bin/dev-workflow.mjs"
+  },
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "test": "node scripts/run-tests.mjs tests/contract tests/install",
+    "test:safety": "node scripts/run-tests.mjs tests/security",
+    "test:scenario": "node scripts/run-tests.mjs tests/scenario",
+    "pack": "node scripts/package.mjs",
+    "verify:dist": "node scripts/check-source-sync.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "yaml": "^2.7.0"
+  }
+}

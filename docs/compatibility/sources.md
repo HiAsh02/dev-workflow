@@ -1,0 +1,14 @@
+# Compatibility Reference Sources
+
+All primary specifications and host documentation links below were fetched and verified on **2026-11-15**.
+
+| Subject | Primary URL | Resolved / Verified Location | Verified Notes (2026-11-15) |
+|---|---|---|---|
+| **Agent Skills Specification** | https://agentskills.io/specification | https://agentskills.io/specification (HTTP 200) | `SKILL.md` YAML frontmatter requires `name` (1-64 chars, `[a-z0-9-]`, no `--`, matches parent dir) and `description` (1-1024 chars); optional `license`, `compatibility`, `metadata`, `allowed-tools`; `scripts/`, `references/`, `assets/`. |
+| **Agent Plugins v1.0.0 Spec** | https://agent-plugins.org/specification | https://agent-plugins.org/specification (HTTP 200) | Root `plugin.json` required; standard discovery root `skills/`; optional `mcp.json`; strict containment inside plugin root (`./` relative paths). |
+| **Agent Plugins v1.0.0 Schema** | https://agent-plugins.org/schemas/1.0.0/plugin.schema.json | Saved verbatim at `schemas/plugin-v1.0.0.schema.json` (HTTP 200) | Required `$schema`, `name`; `additionalProperties: false`; forbids `--` or `..` in `name`. |
+| **Agent Plugins Compatible Clients** | https://agent-plugins.org/compatible-clients | https://agent-plugins.org/compatible-clients (HTTP 200) | Lists ChatGPT & Codex, Google Antigravity, Grok Bot (distinct from Grok Build CLI), Cursor, VS Code, Copilot, etc. |
+| **OpenAI Codex Skills** | https://developers.openai.com/codex/skills | Redirects to https://learn.chatgpt.com/docs/build-skills (`.md` available, HTTP 200) | Loads `.agents/skills` from CWD up to repo root (`REPO`) and `$HOME/.agents/skills` (`USER`). Local `codex-cli 0.144.5`: `codex plugin add` requires configured marketplace snapshots. |
+| **Google Antigravity Skills & Plugins** | https://antigravity.google/docs/skills | https://antigravity.google/docs/skills (HTTP 200) + local builtin `agy-customizations` docs | Project `.agents/skills/` and `.agents/plugins/<name>/plugin.json`; user `~/.gemini/config/skills/` and `~/.gemini/config/plugins/<name>/`. |
+| **xAI Grok Build CLI Skills** | https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md | Raw GitHub `main` (HTTP 200) | Scans `.grok/skills/`, `.agents/skills/`, `~/.grok/skills/`. Local `grok 1.0.52`: supports `grok plugin validate`, `grok plugin install <path> --trust`, and `grok inspect --json`. Distinct from Grok Bot. |
+| **Pi Coding Agent Skills & Packages** | https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md | Redirected from `badlogic/pi-mono` to `earendil-works/pi` `main` (HTTP 200) | Scans `.pi/skills/`, `.agents/skills/`, `~/.pi/agent/skills/`. Packages documented at `packages.md` support `package.json` `pi.skills` and `pi install <source> [-l]`. |

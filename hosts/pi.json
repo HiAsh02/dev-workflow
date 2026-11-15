@@ -1,0 +1,30 @@
+{
+  "host": "pi",
+  "displayName": "Pi Coding Agent",
+  "binary": "pi",
+  "versionArgs": ["--version"],
+  "versionPattern": "^([0-9]+\\.[0-9]+\\.[0-9]+[^\\s]*)$",
+  "distinctFrom": [],
+  "supportedModes": ["skills"],
+  "defaultMode": {
+    "project": "skills",
+    "user": "skills"
+  },
+  "targets": {
+    "project": {
+      "skillsDir": ".pi/skills",
+      "altSkillsDir": ".agents/skills",
+      "pluginDir": null,
+      "confidence": "verified_doc_and_local_cli",
+      "source": "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md"
+    },
+    "user": {
+      "skillsDir": ".pi/agent/skills",
+      "altSkillsDir": ".agents/skills",
+      "pluginDir": null,
+      "confidence": "verified_doc_and_local_cli",
+      "source": "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md"
+    }
+  },
+  "notes": "Pi discovers project skills under .pi/skills and .agents/skills, and also supports Pi Packages via 'pi install <path> -l' using package.json's 'pi.skills' entry."
+}

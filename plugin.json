@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "dev-workflow",
+  "version": "0.1.0",
+  "description": "Portable, evidence-driven software development workflows for coding agents",
+  "author": {
+    "name": "HiAsh02",
+    "url": "https://github.com/HiAsh02"
+  },
+  "homepage": "https://github.com/HiAsh02/dev-workflow",
+  "repository": "https://github.com/HiAsh02/dev-workflow",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "agent-plugins",
+    "dev-workflow",
+    "software-engineering",
+    "code-review",
+    "tdd"
+  ]
+}

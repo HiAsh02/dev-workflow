@@ -1,0 +1,46 @@
+name: Validate & Package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install locked devDependencies
+        run: npm ci
+
+      - name: Validate manifest, versions, skills, and links
+        run: npm run validate
+
+      - name: Run contract and install tests
+        run: npm test
+
+      - name: Run security and permission tests
+        run: npm run test:safety
+
+      - name: Run scenario contract tests
+        run: npm run test:scenario
+
+      - name: Build deterministic release package
+        run: npm run pack
+
+      - name: Verify source-to-dist synchronization
+        run: npm run verify:dist
