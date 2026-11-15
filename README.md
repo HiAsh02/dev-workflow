@@ -30,7 +30,7 @@ Current release status: `0.1.0` (`Beta / Partial` cross-host verification — se
 - **OpenAI Codex (`codex-cli 0.144.5`)**: `PASS` (8/8 dimensions) — project-local `.agents/skills/` install/conflict/uninstall, live 8-skill auto-discovery, and isolated read-only `codex exec` runs (`dw-start`, `$dw-debug`, `$dw-review`) verified.
 - **Pi Coding Agent (`pi 1.5.2`)**: `PASS` (8/8 dimensions) — `.pi/skills/` install, local Pi package (`pi install <path> -l --approve` / `pi list --approve` / `pi remove`), live 8-skill auto-discovery, and isolated read-only `pi -p --no-session` runs (`dw-start`, `dw-debug`, `dw-review`) verified.
 - **xAI Grok Build CLI (`grok 1.0.52`)**: `PARTIAL` — `grok plugin validate`, `grok plugin install --trust`, and `grok inspect --json` discovery of all 8 `dw-*` skills verified (note: untrusted project directories skip project skills until trusted); live LLM `invoke` is `BLOCKED` (`You are not authenticated.`). Distinct from `grok-bot`.
-- **Google Antigravity (`44.9.1`)**: `PARTIAL` — passive version probe and `.agents/plugins/dev-workflow/` install verified; live GUI IDE session (`discover` / `invoke`) `NOT_TESTED`.
+- **Google Antigravity (`44.9.1`)**: `PARTIAL` — passive version probe, `.agents/plugins/dev-workflow/` plugin install, and live Antigravity Language Server `GetAllPlugins` 8-skill discovery verified; live GUI/IDE `invoke` `NOT_TESTED`.
 
 Full evidence matrices live in [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md). Cross-platform CI ([`.github/workflows/validate.yml`](./.github/workflows/validate.yml)) runs the full validation and packaging suite on `ubuntu-latest` and `windows-latest`.
 

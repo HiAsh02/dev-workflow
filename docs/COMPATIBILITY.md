@@ -14,7 +14,7 @@
 | Host | Binary / Version | Preferred Mode | CLI / Install / Uninstall | Discovery | Live LLM Invoke | Report |
 |---|---|---|---|---|---|---|
 | `codex` | `codex-cli 0.144.5` | `skills` (`.agents/skills`) | `PASS` | `PASS` (`.agents/skills/` live prompt listing) | `PASS` (`codex exec --ephemeral -s read-only`: `dw-start`, `dw-debug`, `dw-review`) | [codex.md](./compatibility/codex.md) |
-| `antigravity` | `agy 44.9.1` | `plugin` (`.agents/plugins/dev-workflow`) | `PASS` | `NOT_TESTED` | `NOT_TESTED` | [antigravity.md](./compatibility/antigravity.md) |
+| `antigravity` | `agy 44.9.1` | `plugin` (`.agents/plugins/dev-workflow`) | `PASS` | `PASS` (`GetAllPlugins` RPC on isolated workspace) | `NOT_TESTED` | [antigravity.md](./compatibility/antigravity.md) |
 | `grok-build` | `grok 1.0.52` | `skills` (`.agents/skills` / `~/.grok/skills`) or `grok plugin install` | `PASS` | `PASS` (`grok inspect --json` via plugin & user-scope `.grok/skills`) | `BLOCKED` (`grok models`: `You are not authenticated.`) | [grok-build.md](./compatibility/grok-build.md) |
 | `pi` | `pi 1.5.2` | `skills` (`.pi/skills`) or `pi install <path> -l` | `PASS` | `PASS` (`pi list --approve` + `.pi/skills/` live prompt listing) | `PASS` (`pi -p --no-session --approve`: `dw-start`, `dw-debug`, `dw-review`) | [pi.md](./compatibility/pi.md) |
 
