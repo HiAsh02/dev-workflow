@@ -9,14 +9,14 @@
 
 ## Current Compatibility Summary (2026-11-15 — Beta / Partial Verification)
 
-> **Honesty notice**: Passive probes, packaging, installer/uninstaller behavior, and host CLI manifest/discovery checks (where non-LLM CLI commands exist) were executed in isolated sandboxes on `linux / x64`. **Live LLM prompt invocation (`invoke`) across the four hosts is `NOT_TESTED`**, so overall status is `Beta / Partial` rather than full end-to-end runtime certification.
+> **Honesty notice**: Cross-platform CI (`ubuntu-latest` + `windows-latest` via [`.github/workflows/validate.yml`](../.github/workflows/validate.yml)), passive probes, packaging, installer/uninstaller behavior, and live isolated read-only LLM smoke runs (`dw-start`, `dw-debug`, `dw-review`) on **Codex** (`codex-cli 0.144.5`) and **Pi** (`pi 1.5.2`) all passed. Live LLM `invoke` is `BLOCKED` on **Grok Build** (unauthenticated in test environment) and `NOT_TESTED` in the **Antigravity** desktop Electron GUI runtime, so overall release status remains `Beta / Partial` rather than full 4-host live certification.
 
 | Host | Binary / Version | Preferred Mode | CLI / Install / Uninstall | Discovery | Live LLM Invoke | Report |
 |---|---|---|---|---|---|---|
-| `codex` | `codex-cli 0.144.5` | `skills` (`.agents/skills`) | `PASS` | `NOT_TESTED` | `NOT_TESTED` | [codex.md](./compatibility/codex.md) |
+| `codex` | `codex-cli 0.144.5` | `skills` (`.agents/skills`) | `PASS` | `PASS` (`.agents/skills/` live prompt listing) | `PASS` (`codex exec --ephemeral -s read-only`: `dw-start`, `dw-debug`, `dw-review`) | [codex.md](./compatibility/codex.md) |
 | `antigravity` | `agy 44.9.1` | `plugin` (`.agents/plugins/dev-workflow`) | `PASS` | `NOT_TESTED` | `NOT_TESTED` | [antigravity.md](./compatibility/antigravity.md) |
-| `grok-build` | `grok 1.0.52` | `skills` (`.agents/skills` / `~/.grok/skills`) or `grok plugin install` | `PASS` | `PASS` (`grok inspect --json` via plugin & user-scope `.grok/skills`) | `NOT_TESTED` | [grok-build.md](./compatibility/grok-build.md) |
-| `pi` | `pi 1.5.2` | `skills` (`.pi/skills`) or `pi install <path> -l` | `PASS` | `PASS` (`pi list --approve` for Pi package) | `NOT_TESTED` | [pi.md](./compatibility/pi.md) |
+| `grok-build` | `grok 1.0.52` | `skills` (`.agents/skills` / `~/.grok/skills`) or `grok plugin install` | `PASS` | `PASS` (`grok inspect --json` via plugin & user-scope `.grok/skills`) | `BLOCKED` (`grok models`: `You are not authenticated.`) | [grok-build.md](./compatibility/grok-build.md) |
+| `pi` | `pi 1.5.2` | `skills` (`.pi/skills`) or `pi install <path> -l` | `PASS` | `PASS` (`pi list --approve` + `.pi/skills/` live prompt listing) | `PASS` (`pi -p --no-session --approve`: `dw-start`, `dw-debug`, `dw-review`) | [pi.md](./compatibility/pi.md) |
 
 ## Verification Standard
 
