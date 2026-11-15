@@ -54,6 +54,15 @@ node bin/dev-workflow.mjs recover --target /path/to/your-project --dry-run
 node bin/dev-workflow.mjs uninstall --host codex --target /path/to/your-project
 ```
 
+**Pending R3 hardening (not yet published):** Recovery WAL v2 verifies the transaction ID,
+package path allowlist and per-entry before/after hashes. For ambiguous operations, modified
+post-crash files, or older WAL v1, `recover` deliberately refuses automatic replay and
+preserves the journal and backups for manual inspection. This is a conservative behavior,
+not a claim of guaranteed crash-safe recovery on every filesystem. Do not use `--force-unlock`
+when a known writer is alive. Cross-host upgrades now coordinate added and removed reference
+files as well as the preexisting files. See the accompanying R3 patch notes before deploying.
+
+
 Installing into `--scope user` requires explicit `--confirm-user`. Preexisting byte-identical unowned files are skipped for ownership (`preexisting_identical_unowned`) and preserved on `uninstall` unless `--adopt` is passed explicitly; shared directories (e.g., `codex` + `grok-build` on `.agents/skills/`) retain files still referenced by sibling install ledgers during single-host uninstall. Native host commands verified in isolated sandboxes:
 - Grok Build CLI: `grok plugin validate /path/to/dev-workflow` and `grok plugin install /path/to/dev-workflow --trust`
 - Pi Agent: `pi install /path/to/dev-workflow -l`

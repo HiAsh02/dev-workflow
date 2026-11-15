@@ -4,6 +4,21 @@ All notable changes to `dev-workflow` are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — R3 hardening patch (not merged, not released)
+
+### Fixed
+
+- Validate recovery WAL v2 transaction identity, backup directory and canonical package target paths before any rollback or cleanup; legacy/ambiguous WAL is rejected without modifying user files.
+- Persist pending/applied/rolled-back undo states with before/after SHA256 so concurrent creates and post-crash edits are not deleted or overwritten.
+- Coordinate additions and removals of files in a shared skill directory across active host ownership ledgers; compare prerelease versions using SemVer 2.0 ordering.
+- Refuse persisting `done` steps whose evidence/check metadata cannot later be verified; compare the complete source file-set and package digest when applying an installation plan.
+- Add R3 regression scenarios, including journal tampering, exclusive-create races, interrupted recovery and cross-host shared references.
+
+### Limitations
+
+- Crash recovery is fail-closed, not a guaranteed automatic repair: if WAL metadata is ambiguous or its source files are no longer in the installed package manifest, manual remediation may be needed.
+- The R3 patch has not been merged or published. CI on the actual full repository must be rerun before release.
+
 ## [0.1.0] - 2026-11-15
 
 ### Added

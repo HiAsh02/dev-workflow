@@ -425,3 +425,35 @@ test("R2-REG-EVIDENCE-01: strict verification rejects done steps missing evidenc
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("R3-REG-STATE-WRITE-01: done cannot be persisted without cryptographically indexed passing evidence", () => {
+  const dir = makeWorkspace();
+  const taskDir = path.join(dir, ".dev-workflow/tasks/r3-state");
+  const proofRel = ".dev-workflow/tasks/r3-state/proof.txt";
+  const proof = path.join(dir, proofRel);
+  const head = "a".repeat(40);
+  fs.mkdirSync(taskDir, { recursive: true });
+  fs.writeFileSync(proof, "PASS\n", "utf8");
+  const state = JSON.parse(fs.readFileSync(path.join(repoRoot, "templates/run-state.json"), "utf8"));
+  state.head_commit = head;
+  state.base_commit = head;
+  state.steps = [{ id: "S1", status: "done", depends_on: [], evidence: [proofRel] }];
+  try {
+    assert.throws(
+      () => writeTaskStateAtomic({ taskDir, state, schemaPath }),
+      /requires verified_head|worktree_fingerprint|passing check_ids/i
+    );
+    assert.equal(fs.existsSync(path.join(taskDir, "run-state.json")), false);
+    state.steps[0].verified_head = head;
+    state.steps[0].worktree_fingerprint = "clean:sha256-fixture";
+    state.steps[0].evidence_hashes = { [proofRel]: sha256File(proof) };
+    state.steps[0].check_ids = ["unit"];
+    state.checks = [{ id: "unit", command: "node --test", result: "passed", exit_code: 0, head_commit: head, recorded_at: "2026-11-15T12:00:00Z" }];
+    writeTaskStateAtomic({ taskDir, state, schemaPath });
+    assert.equal(fs.existsSync(path.join(taskDir, "run-state.json")), true);
+    state.steps[0].evidence_hashes[proofRel] = "not-a-sha";
+    assert.throws(() => writeTaskStateAtomic({ taskDir, state, schemaPath }), /invalid|pattern|sha/i);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
