@@ -23,7 +23,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
       const key = arg.slice(2);
-      if (["dry-run", "confirm-user", "help", "h"].includes(key)) {
+      if (["dry-run", "confirm-user", "adopt", "help", "h"].includes(key)) {
         flags[key] = true;
       } else {
         const next = argv[i + 1];
@@ -98,8 +98,8 @@ function printUsage() {
 
 Commands:
   doctor    --host <codex|antigravity|grok-build|pi|all> [--format json|text]
-  install   --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--dry-run] [--confirm-user] [--format json|text]
-  update    --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--dry-run] [--confirm-user] [--format json|text]
+  install   --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--dry-run] [--confirm-user] [--format json|text]
+  update    --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--dry-run] [--confirm-user] [--format json|text]
   list      [--scope project|user] [--target dir] [--host host] [--format json|text]
   uninstall --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--dry-run] [--confirm-user] [--format json|text]
 `);
@@ -157,6 +157,8 @@ function main() {
       mode: flags.mode ?? "auto",
       sourceRef: getGitRef(sourceRoot),
       confirmUser: Boolean(flags["confirm-user"]),
+      adopt: Boolean(flags.adopt),
+      preferInstalledMode: command === "update",
     });
 
     if (flags["dry-run"]) {

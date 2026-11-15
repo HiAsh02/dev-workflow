@@ -19,8 +19,12 @@
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "test": "node scripts/run-tests.mjs tests/contract tests/install",
+    "test:contract": "node scripts/run-tests.mjs tests/contract",
+    "test:install": "node scripts/run-tests.mjs tests/install",
     "test:safety": "node scripts/run-tests.mjs tests/security",
     "test:scenario": "node scripts/run-tests.mjs tests/scenario",
+    "test:eval": "node scripts/run-tests.mjs tests/eval",
+    "eval:live": "node scripts/run-live-evals.mjs",
     "pack": "node scripts/package.mjs",
     "verify:dist": "node scripts/check-source-sync.mjs"
   },

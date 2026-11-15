@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashDirectoryFiles, scanSensitiveArtifacts } from "../lib/integrity.mjs";
-import { sha256File } from "../lib/safe-files.mjs";
+import { normalizeRelativePath, sha256Buffer, sha256File } from "../lib/safe-files.mjs";
+import { readZipEntries } from "../lib/zip.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -70,10 +71,44 @@ export function verifySourceSync(
   if (!fs.existsSync(checksumsPath)) {
     errors.push("Missing dist/SHA256SUMS.txt");
   } else if (fs.existsSync(zipPath)) {
-    const actualZipHash = sha256File(zipPath);
+    const zipBuf = fs.readFileSync(zipPath);
+    const actualZipHash = sha256Buffer(zipBuf);
     const sumsText = fs.readFileSync(checksumsPath, "utf8");
     if (!sumsText.includes(`${actualZipHash}  ${bundleName}.zip`)) {
       errors.push("dist/SHA256SUMS.txt does not match actual zip sha256");
+    }
+
+    try {
+      const zipEntries = readZipEntries(zipBuf);
+      const prefix = `${bundleName}/`;
+      const zipHashes = {};
+      for (const entry of zipEntries) {
+        if (!entry.path.startsWith(prefix)) {
+          errors.push(`Zip entry outside expected prefix '${prefix}': '${entry.path}'`);
+          continue;
+        }
+        const rel = entry.path.slice(prefix.length);
+        const norm = normalizeRelativePath(rel);
+        if (!norm.ok) {
+          errors.push(`Unsafe zip entry path '${entry.path}': ${norm.error}`);
+          continue;
+        }
+        zipHashes[norm.relativePosix] = sha256Buffer(entry.data);
+      }
+      for (const [rel, expectedHash] of Object.entries(expectedHashes)) {
+        if (!(rel in zipHashes)) {
+          errors.push(`Missing file in zip archive: '${rel}'`);
+        } else if (zipHashes[rel] !== expectedHash) {
+          errors.push(`Zip entry hash mismatch vs source for '${rel}'`);
+        }
+      }
+      for (const rel of Object.keys(zipHashes)) {
+        if (!(rel in expectedHashes)) {
+          errors.push(`Unexpected extra file in zip archive: '${rel}'`);
+        }
+      }
+    } catch (err) {
+      errors.push(`Failed to verify zip archive contents: ${err.message}`);
     }
   }
 

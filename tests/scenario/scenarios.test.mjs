@@ -1,3 +1,9 @@
+/**
+ * Test Tier: contract-static (scenario specifications and static fixture contracts).
+ *
+ * Offline eval harness & invariant checks live in `tests/eval/behavior-eval.test.mjs` (`npm run test:eval`).
+ * Real isolated host LLM evaluations live in `scripts/run-live-evals.mjs` (`npm run eval:live`).
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

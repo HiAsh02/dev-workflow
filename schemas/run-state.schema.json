@@ -96,6 +96,28 @@
           "evidence": {
             "type": "array",
             "items": { "type": "string", "minLength": 1 }
+          },
+          "evidence_hashes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "verified_head": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "worktree_fingerprint": {
+            "type": ["string", "null"],
+            "minLength": 1
+          },
+          "side_effect": {
+            "type": "boolean"
+          },
+          "check_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
           }
         }
       }
@@ -112,6 +134,11 @@
           "result": {
             "type": "string",
             "enum": ["passed", "failed", "not_run", "blocked"]
+          },
+          "exit_code": { "type": ["integer", "null"] },
+          "head_commit": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9a-f]{40}$"
           },
           "recorded_at": { "type": "string", "minLength": 1 },
           "evidence": { "type": "string" }

@@ -8,7 +8,14 @@ import {
   findCaseCollisions,
   normalizeRelativePath,
 } from "../../lib/safe-files.mjs";
-import { buildInstallPlan, buildUninstallPlan } from "../../lib/install-plan.mjs";
+import {
+  buildInstallPlan,
+  buildUninstallPlan,
+  applyInstallPlan,
+  applyUninstallPlan,
+  listInstalledPackages,
+} from "../../lib/install-plan.mjs";
+import { sha256File } from "../../lib/safe-files.mjs";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -104,5 +111,99 @@ test("uninstall skips tampered ownership entry pointing outside target root", ()
   } finally {
     fs.rmSync(project, { recursive: true, force: true });
     fs.rmSync(outsideFile, { force: true });
+  }
+});
+
+test("REG-PATH-01: rejects .dev-workflow symlink or junction escaping project root with zero outside writes", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "dw-path01-proj-"));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), "dw-path01-out-"));
+  try {
+    fs.symlinkSync(
+      outside,
+      path.join(project, ".dev-workflow"),
+      process.platform === "win32" ? "junction" : undefined
+    );
+
+    const plan = buildInstallPlan({
+      sourceRoot: repoRoot,
+      projectRoot: project,
+      hostsDir,
+      host: "codex",
+      scope: "project",
+    });
+    assert.equal(plan.supported, false);
+    assert.match(plan.reason, /escapes root|Unsafe ownership/i);
+    assert.equal(fs.readdirSync(outside).length, 0);
+
+    assert.throws(() => listInstalledPackages({ scopeRoot: project }), /escapes root|Unsafe/i);
+  } finally {
+    fs.rmSync(project, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test("REG-META-01: uninstall rejects tampered ownership pointing to root README.md or mismatched host/mode/target_root", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "dw-meta01-"));
+  try {
+    const readmePath = path.join(project, "README.md");
+    fs.writeFileSync(readmePath, "# Critical User Project README\n", "utf8");
+    const readmeSha = sha256File(readmePath);
+
+    const installsDir = path.join(project, ".dev-workflow/installs");
+    fs.mkdirSync(installsDir, { recursive: true });
+    const ownershipFile = path.join(installsDir, "codex-project-skills.json");
+
+    // 1. Out-of-prefix file pointing at README.md with matching hash
+    fs.writeFileSync(
+      ownershipFile,
+      JSON.stringify({
+        schema_version: 2,
+        host: "codex",
+        scope: "project",
+        mode: "skills",
+        target_root: ".agents/skills",
+        files: {
+          "README.md": { sha256: readmeSha, provenance: "created" },
+        },
+      }),
+      "utf8"
+    );
+    assert.throws(
+      () =>
+        buildUninstallPlan({
+          projectRoot: project,
+          hostsDir,
+          host: "codex",
+          scope: "project",
+        }),
+      /outside allowed target_root|Invalid ownership/i
+    );
+    assert.equal(fs.existsSync(readmePath), true);
+
+    // 2. Host/mode/target_root mismatch
+    fs.writeFileSync(
+      ownershipFile,
+      JSON.stringify({
+        schema_version: 2,
+        host: "pi",
+        scope: "project",
+        mode: "skills",
+        target_root: ".pi/skills",
+        files: {},
+      }),
+      "utf8"
+    );
+    assert.throws(
+      () =>
+        buildUninstallPlan({
+          projectRoot: project,
+          hostsDir,
+          host: "codex",
+          scope: "project",
+        }),
+      /mismatch|Invalid ownership/i
+    );
+  } finally {
+    fs.rmSync(project, { recursive: true, force: true });
   }
 });

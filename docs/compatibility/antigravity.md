@@ -8,16 +8,23 @@
 
 ## Eight-Dimension Matrix
 
-| Dimension | Status | Command / Method | Observed Evidence |
-|---|---|---|---|
-| `version` | `PASS` | `node bin/dev-workflow.mjs doctor --host antigravity --format json` | Passively read `version` (`44.9.1`) from `/home/kevin/Applications/Antigravity-44.9.1/version` without spawning the GUI launcher |
-| `install` | `PASS` | `node bin/dev-workflow.mjs install --host antigravity --target <sandbox> --format json` | Installed `plugin.json`, `VERSION`, `LICENSE`, `README.md`, `CHANGELOG.md`, and all 8 `skills/dw-*` directories into `<sandbox>/.agents/plugins/dev-workflow/` |
-| `discover` | `PASS` | Antigravity Language Server `GetAllPlugins` RPC against isolated `file://<sandbox>` | Live runtime returned plugin `name: "dev-workflow"` (`disabled: null`) with all 8 skills (`dw-build`, `dw-debug`, `dw-design`, `dw-handoff`, `dw-plan`, `dw-review`, `dw-ship`, `dw-start`) from `.agents/plugins/dev-workflow/` |
-| `invoke` | `NOT_TESTED` | — | `/home/kevin/.local/bin/agy` wraps the desktop Electron binary (`/home/kevin/Applications/Antigravity-44.9.1/antigravity`) with no headless single-turn CLI prompt runner like `codex exec` / `pi -p`; live IDE prompt invocation was not triggered in automated shell checks |
-| `update` | `PASS` | `tests/install/install-cli.test.mjs` + `lib/install-plan.mjs` | Ownership manifest tracks file SHA-256 hashes and blocks overwriting modified files |
-| `uninstall` | `PASS` | `lib/install-plan.mjs` + `tests/install/install-cli.test.mjs` | Removes unmodified owned plugin files and preserves user modifications |
-| `conflict` | `PASS` | `tests/install/install-cli.test.mjs` (`VAL-10`) | Verified `plugin` mode and `skills` mode produce byte-identical hashes under `skills/` |
-| `permissions` | `PASS` | `doctor` + `--scope user` gate | `doctor` never launches GUI or edits `~/.gemini/config/config.json`; `--scope user` requires `--confirm-user` |
+Evidence types: `STATIC` | `NODE_INTEGRATION` | `NATIVE_HOST` | `LIVE_LLM`
+
+| Dimension | Status | Evidence Type | Command / Method | Observed Evidence |
+|---|---|---|---|---|
+| `version` | `PASS` | `NATIVE_HOST` | `node bin/dev-workflow.mjs doctor --host antigravity --format json` | Passively read `version` (`44.9.1`) from `/home/kevin/Applications/Antigravity-44.9.1/version` without spawning the Electron GUI launcher |
+| `install` | `PASS` | `NODE_INTEGRATION` | `node bin/dev-workflow.mjs install --host antigravity --target <sandbox> --format json` | Installed `plugin.json`, `VERSION`, `LICENSE`, `README.md`, `CHANGELOG.md`, and all 8 `skills/dw-*` directories into `<sandbox>/.agents/plugins/dev-workflow/` inside target lock + `.txn-journal.json` rollback protection |
+| `discover` | `PASS` | `NATIVE_HOST` | Antigravity Language Server `GetAllPlugins` RPC against isolated `file://<sandbox>` | Live runtime returned plugin `name: "dev-workflow"` (`disabled: null`) with all 8 `dw-*` skills (`dw-build`, `dw-debug`, `dw-design`, `dw-handoff`, `dw-plan`, `dw-review`, `dw-ship`, `dw-start`) from `.agents/plugins/dev-workflow/` |
+| `invoke` | `NOT_TESTED` | `LIVE_LLM` | — | `/home/kevin/.local/bin/agy` wraps the desktop Electron binary (`/home/kevin/Applications/Antigravity-44.9.1/antigravity`) with no headless single-turn CLI prompt runner like `codex exec` / `pi -p`; live IDE skill invocation across the 8 skills was not executed in automated checks |
+| `update` | `PASS` | `NODE_INTEGRATION` | `tests/install/install-cli.test.mjs`, `tests/install/ownership-safety.test.mjs` | Locked ownership manifest verifies `expected_before` hashes, preserves unowned identical files unless `--adopt` is passed, and blocks overwriting modified files |
+| `uninstall` | `PASS` | `NODE_INTEGRATION` | `lib/install-plan.mjs`, `tests/install/install-cli.test.mjs` | Validates ownership header/provenance/`target_root` containment and removes only unmodified owned plugin files not referenced by sibling installs |
+| `conflict` | `PASS` | `NODE_INTEGRATION` | `tests/install/install-cli.test.mjs`, `tests/install/ownership-safety.test.mjs` | Preserves modified WIP and unowned files (`preexisting_identical_unowned` kept out of ownership ledger unless `--adopt` is passed) |
+| `permissions` | `PASS` | `NODE_INTEGRATION` | `doctor` + `--scope user` gate | `doctor` never launches Electron GUI or edits `~/.gemini/config/config.json`; `--scope user` requires `--confirm-user` |
+
+## Skill Discovery vs. Behavioral Invocation Scope
+
+- **Discovered (`NATIVE_HOST` `GetAllPlugins`)**: All 8 skills (`dw-build`, `dw-debug`, `dw-design`, `dw-handoff`, `dw-plan`, `dw-review`, `dw-ship`, `dw-start`).
+- **Live LLM Invoked (`LIVE_LLM`)**: None (`NOT_TESTED` in desktop Electron runtime).
 
 ## Known Limitations & Fallback
 

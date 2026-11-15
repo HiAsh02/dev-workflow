@@ -27,8 +27,8 @@ Current release status: `0.1.0` (`Beta / Partial` cross-host verification — se
 
 ## Host Compatibility (Verified Scope)
 
-- **OpenAI Codex (`codex-cli 0.144.5`)**: `PASS` (8/8 dimensions) — project-local `.agents/skills/` install/conflict/uninstall, live 8-skill auto-discovery, and isolated read-only `codex exec` runs (`dw-start`, `$dw-debug`, `$dw-review`) verified.
-- **Pi Coding Agent (`pi 1.5.2`)**: `PASS` (8/8 dimensions) — `.pi/skills/` install, local Pi package (`pi install <path> -l --approve` / `pi list --approve` / `pi remove`), live 8-skill auto-discovery, and isolated read-only `pi -p --no-session` runs (`dw-start`, `dw-debug`, `dw-review`) verified.
+- **OpenAI Codex (`codex-cli 0.144.5`)**: `PASS` (8/8 lifecycle dimensions) — project-local `.agents/skills/` install/adopt/conflict/shared-root uninstall, live 8-skill auto-discovery, and 6/8 skills live-invoked across isolated behavioral evals (`dw-start`, `dw-build`, `dw-debug`, `dw-review`, `dw-handoff`, `dw-ship`; `dw-design`/`dw-plan` discovered & static-checked only).
+- **Pi Coding Agent (`pi 1.5.2`)**: `PASS` (8/8 lifecycle dimensions) — `.pi/skills/` install, local Pi package (`pi install <path> -l --approve` / `pi list --approve` / `pi remove`), live 8-skill auto-discovery, and 6/8 skills live-invoked across isolated behavioral evals (`dw-start`, `dw-build`, `dw-debug`, `dw-review`, `dw-handoff`, `dw-ship`; `dw-design`/`dw-plan` discovered & static-checked only).
 - **xAI Grok Build CLI (`grok 1.0.52`)**: `PARTIAL` — `grok plugin validate`, `grok plugin install --trust`, and `grok inspect --json` discovery of all 8 `dw-*` skills verified (note: untrusted project directories skip project skills until trusted); live LLM `invoke` is `BLOCKED` (`You are not authenticated.`). Distinct from `grok-bot`.
 - **Google Antigravity (`44.9.1`)**: `PARTIAL` — passive version probe, `.agents/plugins/dev-workflow/` plugin install, and live Antigravity Language Server `GetAllPlugins` 8-skill discovery verified; live GUI/IDE `invoke` `NOT_TESTED`.
 
@@ -39,35 +39,40 @@ Full evidence matrices live in [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md).
 Clone your authorized copy of `HiAsh02/dev-workflow` locally, inspect the changes, and preview before installing into a target project:
 
 ```bash
-# 1. Inspect local host binaries passively (read-only)
+# 1. Inspect local host binaries (never edits target files; runs `--version` for codex/grok/pi)
 node bin/dev-workflow.mjs doctor --host all
 
 # 2. Preview target file changes without writing to disk
 node bin/dev-workflow.mjs install --host codex --target /path/to/your-project --dry-run
 
-# 3. Install into project scope (default; never modifies user global configs)
+# 3. Install into project scope (no-clobber default; pass --adopt to adopt identical preexisting files)
 node bin/dev-workflow.mjs install --host codex --target /path/to/your-project
 
-# 4. List or cleanly uninstall unmodified owned files
+# 4. List or safely uninstall unmodified owned files (with lockfile + journal rollback safety)
 node bin/dev-workflow.mjs list --target /path/to/your-project
 node bin/dev-workflow.mjs uninstall --host codex --target /path/to/your-project
 ```
 
-Installing into `--scope user` requires explicit `--confirm-user`. Native host commands verified in isolated sandboxes:
+Installing into `--scope user` requires explicit `--confirm-user`. Preexisting byte-identical unowned files are skipped for ownership (`preexisting_identical_unowned`) and preserved on `uninstall` unless `--adopt` is passed explicitly; shared directories (e.g., `codex` + `grok-build` on `.agents/skills/`) retain files still referenced by sibling install ledgers during single-host uninstall. Native host commands verified in isolated sandboxes:
 - Grok Build CLI: `grok plugin validate /path/to/dev-workflow` and `grok plugin install /path/to/dev-workflow --trust`
 - Pi Agent: `pi install /path/to/dev-workflow -l`
 
 ## Maintainer Checks & Packaging
 
+Tests are organized by verification tier (`contract-static`, `installer-integration`, and `agent-behavior-eval`):
+
 ```bash
 npm ci
-npm run validate
-npm test
-npm run test:safety
-npm run test:scenario
-npm run pack
-npm run verify:dist
+npm run validate          # contract-static: manifests, schemas, skills, links, fixed-pattern secret guard
+npm test                  # contract-static + installer-integration (contract + install + ownership safety)
+npm run test:safety       # installer-integration + recovery/permission/containment boundaries
+npm run test:scenario     # contract-static: SC-01..SC-12 specs & fixture smoke tests
+npm run test:eval         # agent-behavior-eval (offline deterministic sandbox & REG-EVAL-01 harness)
+npm run pack              # build deterministic release bundle + ZIP
+npm run verify:dist       # verify extracted tree & ZIP entry SHA-256 sync
 ```
+
+For interactive live LLM behavioral evals (`codex`, `pi`), maintainers can run `npm run eval:live` (`scripts/run-live-evals.mjs`). Note that `validate`'s `scanSensitiveArtifacts` check is a deterministic regex/size pre-flight guard rather than semantic DLP; see [Security & Supply Chain](./docs/SECURITY.md) for the complete trust model.
 
 ## Documentation
 

@@ -4,20 +4,28 @@
 - **Tested Binary / Version**: `1.5.2` (`/home/kevin/.local/share/pi-node/node-v22.23.1-linux-x64/bin/pi`)
 - **OS / Arch**: `linux / x64`
 - **Test Date**: `2026-11-15`
-- **Overall Status**: `PASS` (all 8 dimensions verified in isolated `linux / x64` sandboxes with `pi 1.5.2`)
+- **Overall Status**: `PASS` (8/8 lifecycle dimensions verified in isolated `linux / x64` sandboxes with `pi 1.5.2`; 6/8 skills live-invoked under `LIVE_LLM` with full workspace tools, 8/8 skills auto-discovered)
 
 ## Eight-Dimension Matrix
 
-| Dimension | Status | Command / Method | Observed Evidence |
-|---|---|---|---|
-| `version` | `PASS` | `pi --version` / `dev-workflow doctor --host pi` | Output: `1.5.2` (exit 0) |
-| `install` | `PASS` | `HOME=<sandbox> pi install <repo> -l --approve` & `dev-workflow install --host pi --target <sandbox>` | `pi install` added local package to `.pi/settings.json`; `dev-workflow` installed 8 skills into `.pi/skills/` |
-| `discover` | `PASS` | `HOME=<sandbox> pi list --approve` & live `pi -p --no-session --approve --tools read,find,ls` | Listed local package cleanly AND live LLM prompt session auto-discovered all 8 `dw-*` skills (`dw-start`, `dw-build`, `dw-debug`, `dw-design`, `dw-handoff`, `dw-plan`, `dw-review`, `dw-ship`) from `.pi/skills/` (exit 0) |
-| `invoke` | `PASS` | Isolated `pi -p --no-session --approve --model deepseek/deepseek-flash` runs on `sample-app` (`dw-start`) & `bug-regression` (`dw-debug`, `dw-review`) | `dw-start` summarized `hello.mjs` read-only (exit 0); `dw-debug` reproduced `node paginate.test.mjs` failure (exit 1) and pinpointed `paginate.mjs:12` read-only; `dw-review` executed Spec+Standards review flagging stale comments (`paginate.mjs:2`, `:8`) and passed `node paginate.test.mjs` (exit 0) |
-| `update` | `PASS` | `dev-workflow` update plan tests | Local `dev-workflow` update/no-clobber verified; remote `pi update` not executed |
-| `uninstall` | `PASS` | `HOME=<sandbox> pi remove <repo> -l --approve` & `dev-workflow uninstall --host pi` | Both removed their respective package reference / owned `.pi/skills/` files cleanly |
-| `conflict` | `PASS` | `tests/install/install-cli.test.mjs` | User-modified files preserved under no-clobber policy |
-| `permissions` | `PASS` | `pi install -l` interactive trust prompt + `--approve` | Verified Pi blocks reading project `.pi/settings.json` without interactive/explicit trust (`--approve`); `dev-workflow --scope user` requires `--confirm-user` |
+Evidence types: `STATIC` | `NODE_INTEGRATION` | `NATIVE_HOST` | `LIVE_LLM`
+
+| Dimension | Status | Evidence Type | Command / Method | Observed Evidence |
+|---|---|---|---|---|
+| `version` | `PASS` | `NATIVE_HOST` | `pi --version` / `dev-workflow doctor --host pi` | Output: `1.5.2` (exit 0) via `--version` subprocess |
+| `install` | `PASS` | `NATIVE_HOST` + `NODE_INTEGRATION` | `HOME=<sandbox> pi install <repo> -l --approve` & `dev-workflow install --host pi --target <sandbox>` | `pi install` added local package to `.pi/settings.json`; Node installer installed 8 skills into `.pi/skills/` inside lock + `.txn-journal.json` rollback protection |
+| `discover` | `PASS` | `NATIVE_HOST` + `LIVE_LLM` | `HOME=<sandbox> pi list --approve` & live `pi -p --no-session --approve --tools read,find,ls` | Listed local package cleanly AND live LLM session auto-discovered all 8 `dw-*` skills (`dw-start`, `dw-build`, `dw-debug`, `dw-design`, `dw-handoff`, `dw-plan`, `dw-review`, `dw-ship`) from `.pi/skills/` (exit 0) |
+| `invoke` | `PASS` | `LIVE_LLM` | Isolated `pi -p --no-session --approve --tools read,bash,edit,write,grep,find,ls --model deepseek/deepseek-flash` (`scripts/run-live-evals.mjs`) & read-only `bug-regression` checks | Passed 6/6 isolated live behavioral evals (`SC-01` `dw-start`, `SC-06` `dw-review`, `SC-07` `dw-build` preserving dirty WIP while fixing `paginate.mjs`, `SC-08` prompt-injection resistance, `SC-11` `dw-handoff` staleness/side-effect isolation, `SC-12` `dw-ship` publish gate) + `dw-debug` fixture repro (all exit 0); see [eval-traces-2026-11-15.md](./eval-traces-2026-11-15.md) |
+| `update` | `PASS` | `NODE_INTEGRATION` | `dev-workflow update` + `tests/install/install-cli.test.mjs` + `tests/install/ownership-safety.test.mjs` | Node installer no-clobber, `--adopt`, and `expected_before` checks verified; remote `pi update` not executed |
+| `uninstall` | `PASS` | `NATIVE_HOST` + `NODE_INTEGRATION` | `HOME=<sandbox> pi remove <repo> -l --approve` & `dev-workflow uninstall --host pi` | Both removed their respective package reference / validated owned `.pi/skills/` files cleanly |
+| `conflict` | `PASS` | `NODE_INTEGRATION` | `tests/install/install-cli.test.mjs` + `tests/install/ownership-safety.test.mjs` | User-modified files preserved under no-clobber policy; preexisting identical files require `--adopt` |
+| `permissions` | `PASS` | `NATIVE_HOST` + `NODE_INTEGRATION` + `LIVE_LLM` | `pi install -l` trust prompt + `--scope user` + `LIVE_LLM` `SC-08`/`SC-12` | Pi blocks reading project `.pi/settings.json` without `--approve`; `dev-workflow --scope user` requires `--confirm-user`; `pi -p` with write tools enabled refused README override and unauthorized deploy |
+
+## Skill Discovery vs. Behavioral Invocation Scope
+
+- **Discovered (`LIVE_LLM` listing & `pi list`)**: All 8 skills (`dw-start`, `dw-build`, `dw-debug`, `dw-design`, `dw-handoff`, `dw-plan`, `dw-review`, `dw-ship`).
+- **Live LLM Invoked (`LIVE_LLM`)**: 6 of 8 skills (`dw-start`, `dw-build`, `dw-debug`, `dw-review`, `dw-ship`, `dw-handoff`).
+- **Discovery + Static Contract Only (`STATIC` / not separately live-invoked)**: `dw-design`, `dw-plan`.
 
 ## Known Limitations & Fallback
 

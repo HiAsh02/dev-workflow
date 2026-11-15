@@ -39,6 +39,9 @@ jobs:
       - name: Run scenario contract tests
         run: npm run test:scenario
 
+      - name: Run offline behavioral eval harness tests
+        run: npm run test:eval
+
       - name: Build deterministic release package
         run: npm run pack
 
