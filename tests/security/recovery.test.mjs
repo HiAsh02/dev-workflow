@@ -115,7 +115,13 @@ test("recovery detects HEAD change and missing evidence and never grants remote 
       ...validState,
       steps: [{ id: "S1", status: "done", evidence: ["../../etc/passwd"] }],
     };
-    writeTaskStateAtomic({ taskDir, state: escapedState, schemaPath });
+    // The writer now rejects incomplete done metadata; emulate an externally
+    // modified ledger to exercise the read-side path containment check.
+    assert.throws(
+      () => writeTaskStateAtomic({ taskDir, state: escapedState, schemaPath }),
+      /requires verified_head, worktree_fingerprint and passing check_ids/
+    );
+    fs.writeFileSync(path.join(taskDir, "run-state.json"), JSON.stringify(escapedState), "utf8");
     const escaped = inspectTaskRecovery({ projectRoot: dir, taskDir, schemaPath });
     assert.equal(escaped.ok, false);
     assert.equal(escaped.status, "blocked");
