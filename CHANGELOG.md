@@ -14,4 +14,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Project templates (`design.md`, `spec.md`, `task.md`, `worklog.md`, `run-state.json`, `review.md`, `compatibility-report.md`).
 - Locked JSON Schemas (`schemas/plugin-v1.0.0.schema.json`, `schemas/run-state.schema.json`).
 - Offline validation, deterministic packaging, source-sync verification, task-ledger state handling, host capability probing, and safe non-destructive CLI (`bin/dev-workflow.mjs`).
-- Contract, security, install, and scenario test suites plus CI workflow template (`docs/ci/validate.yml`, ready to move to `.github/workflows/validate.yml` once `workflow` token scope is granted).
+- Contract, security, install, and scenario test suites plus GitHub Actions CI workflow (`.github/workflows/validate.yml`).

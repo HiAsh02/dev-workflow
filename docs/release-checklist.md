@@ -22,5 +22,5 @@
    - `pi` (`1.5.2`): `PARTIAL` (see `docs/compatibility/pi.md`)
 4. **Remaining Gaps Before Public `v1.0.0` or Marketplace Publishing**:
    - Execute live LLM `invoke` smoke runs (`dw-start` read-only, `dw-debug` fixture, `dw-review` diff) on all 4 hosts.
-   - Move `docs/ci/validate.yml` to `.github/workflows/validate.yml` (requires GitHub token `workflow` scope) and verify CI execution on `ubuntu-latest` and `windows-latest`.
+   - Verify `.github/workflows/validate.yml` CI execution on `ubuntu-latest` and `windows-latest`.
    - Obtain explicit user approval before changing repository visibility from `private` to `public` or creating a public release tag.
