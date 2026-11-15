@@ -13,6 +13,13 @@ const repoRoot = path.resolve(__dirname, "..");
 
 const TOP_LEVEL_FILES = ["plugin.json", "VERSION", "LICENSE", "README.md", "CHANGELOG.md"];
 
+// Standalone releases use packaging guides, not source-only CLI documentation.
+function bundleTopSource(rootDir, rel) {
+  if (rel === "README.md") return path.join(rootDir, "packaging", "README.dist.en.md");
+  if (rel === "README.zh-CN.md") return path.join(rootDir, "packaging", "README.dist.zh-CN.md");
+  return path.join(rootDir, rel);
+}
+
 function verifySingleLocaleBundle({ rootDir, outRoot, version, locale, sumsText, schemaPath }) {
   const errors = [];
   const bundleName = `dev-workflow-${version}-${locale}`;
@@ -33,7 +40,7 @@ function verifySingleLocaleBundle({ rootDir, outRoot, version, locale, sumsText,
   const expectedHashes = {};
   const topFiles = locale === "zh-CN" ? [...TOP_LEVEL_FILES, "README.zh-CN.md"] : TOP_LEVEL_FILES;
   for (const rel of topFiles) {
-    const abs = path.join(rootDir, rel);
+    const abs = bundleTopSource(rootDir, rel);
     if (!fs.existsSync(abs)) {
       errors.push(`[${locale}] Missing source file '${rel}'`);
     } else {
@@ -48,6 +55,12 @@ function verifySingleLocaleBundle({ rootDir, outRoot, version, locale, sumsText,
   const sourceSkillsHashes = hashDirectoryFiles(skillsSrcDir);
   for (const [rel, hash] of Object.entries(sourceSkillsHashes)) {
     expectedHashes[`skills/${rel}`] = hash;
+  }
+  const templatesSrcDir = locale === "zh-CN"
+    ? path.join(rootDir, "locales", "zh-CN", "templates")
+    : path.join(rootDir, "templates");
+  for (const [rel, hash] of Object.entries(hashDirectoryFiles(templatesSrcDir))) {
+    expectedHashes[`templates/${rel}`] = hash;
   }
 
   const distHashes = hashDirectoryFiles(bundleDir);
