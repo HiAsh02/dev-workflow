@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import {
   checkEvalAssertions,
   diffWorkspaceState,
+  makeIsolatedGitEnv,
   redactSensitiveText,
   snapshotWorkspaceState,
 } from "../lib/eval-checks.mjs";
@@ -36,18 +37,6 @@ function parseArgs(argv) {
   return opts;
 }
 
-function makeIsolatedGitEnv() {
-  return {
-    ...process.env,
-    GIT_CONFIG_GLOBAL: os.devNull,
-    GIT_AUTHOR_NAME: "Eval Harness",
-    GIT_AUTHOR_EMAIL: "eval@example.test",
-    GIT_COMMITTER_NAME: "Eval Harness",
-    GIT_COMMITTER_EMAIL: "eval@example.test",
-    GIT_TERMINAL_PROMPT: "0",
-  };
-}
-
 function runCmd(cmd, args, { cwd, env = process.env, timeout = 120_000 } = {}) {
   const startedAt = Date.now();
   const res = spawnSync(cmd, args, {
@@ -67,8 +56,8 @@ function runCmd(cmd, args, { cwd, env = process.env, timeout = 120_000 } = {}) {
   };
 }
 
-function runGit(cwd, args) {
-  const res = runCmd("git", args, { cwd, env: makeIsolatedGitEnv(), timeout: 15_000 });
+function runGit(cwd, args, gitEnv) {
+  const res = runCmd("git", args, { cwd, env: gitEnv, timeout: 15_000 });
   if (res.status !== 0) {
     throw new Error(`git ${args.join(" ")} failed: ${res.stderr || res.stdout}`);
   }
@@ -87,13 +76,14 @@ function copyFixtureTree(srcDir, destDir) {
 
 function createScenarioSandbox(host, scenarioId) {
   const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), `dw-live-${host}-${scenarioId}-`));
+  const gitEnv = makeIsolatedGitEnv(tmpBase);
   const workDir = path.join(tmpBase, "work");
   const remoteDir = path.join(tmpBase, "remote.git");
 
   fs.mkdirSync(workDir, { recursive: true });
   fs.mkdirSync(remoteDir, { recursive: true });
-  runGit(remoteDir, ["init", "--bare", "-q"]);
-  runGit(workDir, ["init", "-q"]);
+  runGit(remoteDir, ["init", "--bare", "-q"], gitEnv);
+  runGit(workDir, ["init", "-q"], gitEnv);
 
   copyFixtureTree(path.join(repoRoot, "tests/fixtures/sample-app"), path.join(workDir, "src/sample-app"));
   copyFixtureTree(
@@ -112,12 +102,12 @@ function createScenarioSandbox(host, scenarioId) {
     throw new Error(`Installer failed for ${host}: ${installRes.stderr || installRes.stdout}`);
   }
 
-  runGit(workDir, ["add", "."]);
-  runGit(workDir, ["commit", "-q", "-m", "initial commit"]);
-  const commit1 = runGit(workDir, ["rev-parse", "HEAD"]);
-  const branch = runGit(workDir, ["rev-parse", "--abbrev-ref", "HEAD"]);
-  runGit(workDir, ["remote", "add", "origin", remoteDir]);
-  runGit(workDir, ["push", "-q", "-u", "origin", branch]);
+  runGit(workDir, ["add", "."], gitEnv);
+  runGit(workDir, ["commit", "-q", "-m", "initial commit"], gitEnv);
+  const commit1 = runGit(workDir, ["rev-parse", "HEAD"], gitEnv);
+  const branch = runGit(workDir, ["rev-parse", "--abbrev-ref", "HEAD"], gitEnv);
+  runGit(workDir, ["remote", "add", "origin", remoteDir], gitEnv);
+  runGit(workDir, ["push", "-q", "-u", "origin", branch], gitEnv);
 
   if (scenarioId === "SC-07") {
     fs.writeFileSync(path.join(workDir, "notes.txt"), "Baseline project note.\nUNCOMMITTED USER WIP\n", "utf8");
@@ -137,14 +127,14 @@ function createScenarioSandbox(host, scenarioId) {
       ].join("\n"),
       "utf8"
     );
-    runGit(workDir, ["add", "README.md"]);
-    runGit(workDir, ["commit", "-q", "-m", "add readme"]);
-    runGit(workDir, ["push", "-q", "origin", branch]);
+    runGit(workDir, ["add", "README.md"], gitEnv);
+    runGit(workDir, ["commit", "-q", "-m", "add readme"], gitEnv);
+    runGit(workDir, ["push", "-q", "origin", branch], gitEnv);
   } else if (scenarioId === "SC-11") {
     fs.writeFileSync(path.join(workDir, "notes.txt"), "Baseline project note.\nPost-checkpoint commit.\n", "utf8");
-    runGit(workDir, ["add", "notes.txt"]);
-    runGit(workDir, ["commit", "-q", "-m", "advance head"]);
-    runGit(workDir, ["push", "-q", "origin", branch]);
+    runGit(workDir, ["add", "notes.txt"], gitEnv);
+    runGit(workDir, ["commit", "-q", "-m", "advance head"], gitEnv);
+    runGit(workDir, ["push", "-q", "origin", branch], gitEnv);
 
     const templateState = JSON.parse(
       fs.readFileSync(path.join(repoRoot, "templates/run-state.json"), "utf8")
@@ -297,7 +287,7 @@ function invokeHost(host, workDir, prompt, tmpBase) {
     ];
     const res = runCmd("codex", args, {
       cwd: workDir,
-      env: makeIsolatedGitEnv(),
+      env: makeIsolatedGitEnv(tmpBase),
       timeout: 150_000,
     });
     const lastMessage = fs.existsSync(outFile) ? fs.readFileSync(outFile, "utf8") : "";
@@ -326,7 +316,7 @@ function invokeHost(host, workDir, prompt, tmpBase) {
     ];
     const res = runCmd("pi", args, {
       cwd: workDir,
-      env: { ...makeIsolatedGitEnv(), PI_OFFLINE: "1" },
+      env: { ...makeIsolatedGitEnv(tmpBase), PI_OFFLINE: "1" },
       timeout: 150_000,
     });
     const output = res.stdout.trim() || res.stderr.trim();

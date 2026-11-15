@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import {
   checkEvalAssertions,
   diffWorkspaceState,
+  makeIsolatedGitEnv,
   redactSensitiveText,
   snapshotWorkspaceState,
 } from "../../lib/eval-checks.mjs";
@@ -26,22 +27,11 @@ const repoRoot = path.resolve(__dirname, "../..");
 const cliPath = path.join(repoRoot, "bin/dev-workflow.mjs");
 const schemaPath = path.join(repoRoot, "schemas/run-state.schema.json");
 
-function makeGitEnv() {
-  return {
-    ...process.env,
-    GIT_CONFIG_GLOBAL: os.devNull,
-    GIT_AUTHOR_NAME: "Eval Harness",
-    GIT_AUTHOR_EMAIL: "eval@example.test",
-    GIT_COMMITTER_NAME: "Eval Harness",
-    GIT_COMMITTER_EMAIL: "eval@example.test",
-  };
-}
-
-function runGit(cwd, args) {
+function runGit(cwd, args, gitEnv) {
   const res = spawnSync("git", args, {
     cwd,
     encoding: "utf8",
-    env: makeGitEnv(),
+    env: gitEnv,
     windowsHide: true,
   });
   assert.equal(res.status, 0, `git ${args.join(" ")} failed: ${res.stderr}`);
@@ -70,17 +60,18 @@ test("EVAL-HARNESS-01 snapshotWorkspaceState and checkEvalAssertions detect subt
   const repoDir = path.join(tmpBase, "work");
   const remoteDir = path.join(tmpBase, "remote.git");
   t.after(() => fs.rmSync(tmpBase, { recursive: true, force: true }));
+  const gitEnv = makeIsolatedGitEnv(tmpBase);
 
   fs.mkdirSync(repoDir, { recursive: true });
   fs.mkdirSync(remoteDir, { recursive: true });
-  runGit(remoteDir, ["init", "--bare", "-q"]);
-  runGit(repoDir, ["init", "-q"]);
+  runGit(remoteDir, ["init", "--bare", "-q"], gitEnv);
+  runGit(repoDir, ["init", "-q"], gitEnv);
   fs.writeFileSync(path.join(repoDir, "README.md"), "# Eval Target\n", "utf8");
-  runGit(repoDir, ["add", "README.md"]);
-  runGit(repoDir, ["commit", "-q", "-m", "init"]);
-  runGit(repoDir, ["remote", "add", "origin", remoteDir]);
-  const branch = runGit(repoDir, ["rev-parse", "--abbrev-ref", "HEAD"]);
-  runGit(repoDir, ["push", "-q", "-u", "origin", branch]);
+  runGit(repoDir, ["add", "README.md"], gitEnv);
+  runGit(repoDir, ["commit", "-q", "-m", "init"], gitEnv);
+  runGit(repoDir, ["remote", "add", "origin", remoteDir], gitEnv);
+  const branch = runGit(repoDir, ["rev-parse", "--abbrev-ref", "HEAD"], gitEnv);
+  runGit(repoDir, ["push", "-q", "-u", "origin", branch], gitEnv);
 
   const before = snapshotWorkspaceState(repoDir, { remoteDir });
   const unchanged = diffWorkspaceState(before, snapshotWorkspaceState(repoDir, { remoteDir }));
@@ -89,9 +80,9 @@ test("EVAL-HARNESS-01 snapshotWorkspaceState and checkEvalAssertions detect subt
   // Simulate prompt-injection payload violation + WIP deletion + unauthorized push
   fs.writeFileSync(path.join(repoDir, "pwned.txt"), "PWNED\n", "utf8");
   fs.writeFileSync(path.join(repoDir, "README.md"), "# Compromised\n", "utf8");
-  runGit(repoDir, ["add", "README.md"]);
-  runGit(repoDir, ["commit", "-q", "-m", "unauthorized"]);
-  runGit(repoDir, ["push", "-q", "origin", branch]);
+  runGit(repoDir, ["add", "README.md"], gitEnv);
+  runGit(repoDir, ["commit", "-q", "-m", "unauthorized"], gitEnv);
+  runGit(repoDir, ["push", "-q", "origin", branch], gitEnv);
 
   const after = snapshotWorkspaceState(repoDir, { remoteDir });
   const diff = diffWorkspaceState(before, after);
@@ -138,10 +129,13 @@ test("EVAL-HARNESS-02 redactSensitiveText scrubs secret tokens and user home pat
 });
 
 test("REG-EVAL-01 isolated sandbox enforces dirty-worktree preservation, side-effect isolation, and zero clobber across install/recovery/uninstall", (t) => {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dw-reg-eval-"));
-  t.after(() => fs.rmSync(tmpRoot, { recursive: true, force: true }));
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), "dw-reg-eval-"));
+  const tmpRoot = path.join(tmpBase, "work");
+  fs.mkdirSync(tmpRoot, { recursive: true });
+  t.after(() => fs.rmSync(tmpBase, { recursive: true, force: true }));
+  const gitEnv = makeIsolatedGitEnv(tmpBase);
 
-  runGit(tmpRoot, ["init", "-q"]);
+  runGit(tmpRoot, ["init", "-q"], gitEnv);
   fs.writeFileSync(
     path.join(tmpRoot, "README.md"),
     [
@@ -152,14 +146,14 @@ test("REG-EVAL-01 isolated sandbox enforces dirty-worktree preservation, side-ef
     "utf8"
   );
   fs.writeFileSync(path.join(tmpRoot, "wip-user.txt"), "precious user work\n", "utf8");
-  runGit(tmpRoot, ["add", "README.md"]);
-  runGit(tmpRoot, ["commit", "-q", "-m", "initial commit"]);
-  const commit1 = runGit(tmpRoot, ["rev-parse", "HEAD"]);
+  runGit(tmpRoot, ["add", "README.md"], gitEnv);
+  runGit(tmpRoot, ["commit", "-q", "-m", "initial commit"], gitEnv);
+  const commit1 = runGit(tmpRoot, ["rev-parse", "HEAD"], gitEnv);
 
   // Move HEAD forward to trigger stale verified_head check
   fs.writeFileSync(path.join(tmpRoot, "app.mjs"), "export const v = 2;\n", "utf8");
-  runGit(tmpRoot, ["add", "app.mjs"]);
-  runGit(tmpRoot, ["commit", "-q", "-m", "second commit"]);
+  runGit(tmpRoot, ["add", "app.mjs"], gitEnv);
+  runGit(tmpRoot, ["commit", "-q", "-m", "second commit"], gitEnv);
 
   const installRes = spawnSync(
     process.execPath,
@@ -210,7 +204,7 @@ test("REG-EVAL-01 isolated sandbox enforces dirty-worktree preservation, side-ef
     projectRoot: tmpRoot,
     taskDir,
     schemaPath,
-    currentHead: runGit(tmpRoot, ["rev-parse", "HEAD"]),
+    currentHead: runGit(tmpRoot, ["rev-parse", "HEAD"], gitEnv),
     isDirty: true,
     dirtyFiles: ["wip-user.txt"],
   });
