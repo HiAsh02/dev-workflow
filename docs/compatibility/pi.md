@@ -1,7 +1,7 @@
 # Host Compatibility Report: Pi Coding Agent
 
 - **Host ID**: `pi`
-- **Tested Binary / Version**: `1.5.2` (`/home/kevin/.local/share/pi-node/node-v22.23.1-linux-x64/bin/pi`)
+- **Tested Binary / Version**: `1.5.2` (`~/.local/share/pi-node/node-v22.23.1-linux-x64/bin/pi`)
 - **OS / Arch**: `linux / x64`
 - **Test Date**: `2026-11-15`
 - **Overall Status**: `PASS` (8/8 lifecycle dimensions verified in isolated `linux / x64` sandboxes with `pi 1.5.2`; 6/8 skills live-invoked under `LIVE_LLM` with full workspace tools, 8/8 skills auto-discovered)

@@ -45,11 +45,12 @@ node bin/dev-workflow.mjs doctor --host all
 # 2. Preview target file changes without writing to disk
 node bin/dev-workflow.mjs install --host codex --target /path/to/your-project --dry-run
 
-# 3. Install into project scope (no-clobber default; pass --adopt to adopt identical preexisting files)
+# 3. Install or update into project scope (no-clobber default; pass --adopt or --upgrade-shared explicitly when coordinating shared directories)
 node bin/dev-workflow.mjs install --host codex --target /path/to/your-project
 
-# 4. List or safely uninstall unmodified owned files (with lockfile + journal rollback safety)
+# 4. List, recover interrupted transactions, or safely uninstall unmodified owned files (with .apply.lock + WAL journal rollback safety)
 node bin/dev-workflow.mjs list --target /path/to/your-project
+node bin/dev-workflow.mjs recover --target /path/to/your-project --dry-run
 node bin/dev-workflow.mjs uninstall --host codex --target /path/to/your-project
 ```
 

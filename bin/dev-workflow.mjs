@@ -6,9 +6,11 @@ import { execFileSync } from "node:child_process";
 import { detectHost, SUPPORTED_HOSTS } from "../lib/host-probes.mjs";
 import {
   applyInstallPlan,
+  applyPendingRecovery,
   applyUninstallPlan,
   buildInstallPlan,
   buildUninstallPlan,
+  inspectPendingRecovery,
   listInstalledPackages,
 } from "../lib/install-plan.mjs";
 
@@ -23,7 +25,18 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
       const key = arg.slice(2);
-      if (["dry-run", "confirm-user", "adopt", "help", "h"].includes(key)) {
+      if (
+        [
+          "dry-run",
+          "confirm-user",
+          "adopt",
+          "upgrade-shared",
+          "apply",
+          "force-unlock",
+          "help",
+          "h",
+        ].includes(key)
+      ) {
         flags[key] = true;
       } else {
         const next = argv[i + 1];
@@ -98,10 +111,11 @@ function printUsage() {
 
 Commands:
   doctor    --host <codex|antigravity|grok-build|pi|all> [--format json|text]
-  install   --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--dry-run] [--confirm-user] [--format json|text]
-  update    --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--dry-run] [--confirm-user] [--format json|text]
+  install   --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--upgrade-shared] [--dry-run] [--confirm-user] [--format json|text]
+  update    --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--adopt] [--upgrade-shared] [--dry-run] [--confirm-user] [--format json|text]
   list      [--scope project|user] [--target dir] [--host host] [--format json|text]
   uninstall --host <host> [--scope project|user] [--mode auto|plugin|skills] [--target dir] [--dry-run] [--confirm-user] [--format json|text]
+  recover   [--scope project|user] [--target dir] [--dry-run|--apply] [--force-unlock] [--confirm-user] [--format json|text]
 `);
 }
 
@@ -141,6 +155,33 @@ function main() {
     return;
   }
 
+  if (command === "recover") {
+    if (flags["dry-run"] && flags.apply) {
+      throw new Error("--dry-run and --apply cannot be used together for recover");
+    }
+    if (flags.apply) {
+      const recovered = applyPendingRecovery({
+        projectRoot: targetDir,
+        homeDir,
+        scope,
+        confirmUser: Boolean(flags["confirm-user"]),
+        forceUnlock: Boolean(flags["force-unlock"]),
+      });
+      printOutput(recovered, format);
+      return;
+    }
+    const probe = inspectPendingRecovery({
+      projectRoot: targetDir,
+      homeDir,
+      scope,
+    });
+    printOutput(probe, format);
+    if (!probe.ok) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   const host = flags.host;
   if (!host) {
     throw new Error("--host is required");
@@ -159,6 +200,7 @@ function main() {
       confirmUser: Boolean(flags["confirm-user"]),
       adopt: Boolean(flags.adopt),
       preferInstalledMode: command === "update",
+      upgradeShared: Boolean(flags["upgrade-shared"]),
     });
 
     if (flags["dry-run"]) {
@@ -185,6 +227,7 @@ function main() {
       scope,
       mode: flags.mode ?? "auto",
       confirmUser: Boolean(flags["confirm-user"]),
+      sourceRoot,
     });
 
     if (flags["dry-run"]) {

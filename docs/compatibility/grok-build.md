@@ -1,7 +1,7 @@
 # Host Compatibility Report: xAI Grok Build CLI
 
 - **Host ID**: `grok-build` (explicitly distinct from `grok-bot`)
-- **Tested Binary / Version**: `grok 1.0.52 (0920c8169e27)` (`/home/kevin/.local/bin/grok`)
+- **Tested Binary / Version**: `grok 1.0.52 (0920c8169e27)` (`~/.local/bin/grok`)
 - **OS / Arch**: `linux / x64`
 - **Test Date**: `2026-11-15`
 - **Overall Status**: `PARTIAL` (version, plugin validate/install/uninstall, skills install/discover/uninstall `PASS`; live LLM `invoke` is `BLOCKED` by missing Grok authentication)

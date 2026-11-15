@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { inspectTaskRecovery, writeTaskStateAtomic } from "../../lib/state.mjs";
+import { sha256File } from "../../lib/safe-files.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
@@ -38,6 +39,9 @@ test("recovery detects HEAD change and missing evidence and never grants remote 
   const taskDir = path.join(dir, ".dev-workflow/tasks/t1");
   const evFile = path.join(dir, ".dev-workflow/tasks/t1/proof.txt");
   fs.writeFileSync(evFile, "ok\n", "utf8");
+  const evHash = sha256File(evFile);
+  const head = "a".repeat(40);
+  const worktreeFp = "clean:0";
 
   const validState = {
     schema_version: 1,
@@ -46,15 +50,33 @@ test("recovery detects HEAD change and missing evidence and never grants remote 
     mode: "standard",
     status: "executing",
     project_root: ".",
-    base_commit: "a".repeat(40),
-    head_commit: "a".repeat(40),
+    base_commit: head,
+    head_commit: head,
     scope_summary: "Slice 1",
     approval_reference: "User approved commit & push last week",
     steps: [
-      { id: "S1", status: "done", depends_on: [], evidence: [".dev-workflow/tasks/t1/proof.txt"] },
+      {
+        id: "S1",
+        status: "done",
+        depends_on: [],
+        evidence: [".dev-workflow/tasks/t1/proof.txt"],
+        evidence_hashes: { ".dev-workflow/tasks/t1/proof.txt": evHash },
+        verified_head: head,
+        worktree_fingerprint: worktreeFp,
+        check_ids: ["chk-1"],
+      },
       { id: "S2", status: "pending", depends_on: ["S1"], evidence: [] },
     ],
-    checks: [],
+    checks: [
+      {
+        id: "chk-1",
+        command: "npm test",
+        result: "passed",
+        exit_code: 0,
+        head_commit: head,
+        recorded_at: "2026-11-15T00:00:00Z",
+      },
+    ],
     blockers: [],
     updated_at: "2026-11-15T00:00:00Z",
   };
@@ -62,12 +84,13 @@ test("recovery detects HEAD change and missing evidence and never grants remote 
   try {
     writeTaskStateAtomic({ taskDir, state: validState, schemaPath });
 
-    // Same HEAD and existing evidence -> S1 remains verified done, S2 ready, remote auth still false
+    // Same HEAD, complete verification metadata, and existing evidence -> S1 remains verified done, S2 ready, remote auth still false
     const sameHead = inspectTaskRecovery({
       projectRoot: dir,
       taskDir,
       schemaPath,
-      currentHead: "a".repeat(40),
+      currentHead: head,
+      currentWorktreeFingerprint: worktreeFp,
     });
     assert.equal(sameHead.ok, true);
     assert.equal(sameHead.reverifyRequired, false);
@@ -291,6 +314,113 @@ test("REG-STATE-01: writeTaskStateAtomic enforces state machine transitions and 
       /corrupt run-state\.json/i
     );
     assert.equal(fs.readFileSync(path.join(taskDir, "run-state.json"), "utf8"), broken);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("R2-REG-EVIDENCE-01: strict verification rejects done steps missing evidence_hashes, verified_head, worktree_fingerprint, or passing check_ids, and refuses null currentHead", () => {
+  const dir = makeWorkspace();
+  const taskDir = path.join(dir, ".dev-workflow/tasks/t1");
+  const evRel = ".dev-workflow/tasks/t1/proof.txt";
+  const evFile = path.join(dir, evRel);
+  fs.writeFileSync(evFile, "all tests passed\n", "utf8");
+  const head = "c".repeat(40);
+  const worktreeFp = "clean:0";
+
+  try {
+    // Compute evSha using Node crypto inline without duplicating helper
+    const baseState = {
+      schema_version: 1,
+      task_id: "t1",
+      intent: "bug-fix",
+      mode: "standard",
+      status: "executing",
+      project_root: ".",
+      base_commit: head,
+      head_commit: head,
+      scope_summary: "Strict evidence verification",
+      approval_reference: "Audit only",
+      steps: [
+        {
+          id: "S1",
+          status: "done",
+          depends_on: [],
+          evidence: [evRel],
+        },
+      ],
+      checks: [],
+      blockers: [],
+      updated_at: "2026-11-15T00:00:00Z",
+    };
+
+    // 1. Bare existing evidence file WITHOUT evidence_hashes / verified_head / check_ids -> verifiedDone=false
+    fs.writeFileSync(path.join(taskDir, "run-state.json"), JSON.stringify(baseState), "utf8");
+    const recMissingMeta = inspectTaskRecovery({
+      projectRoot: dir,
+      taskDir,
+      schemaPath,
+      currentHead: head,
+      isDirty: false,
+      currentWorktreeFingerprint: worktreeFp,
+    });
+    assert.equal(recMissingMeta.stepSummary[0].verifiedDone, false);
+    assert.equal(recMissingMeta.stepSummary[0].needsReverification, true);
+    assert.equal(recMissingMeta.reverifyRequired, true);
+    assert.ok(recMissingMeta.stepSummary[0].staleReasons.some((r) => r.includes("missing_evidence_hash")));
+    assert.ok(recMissingMeta.stepSummary[0].staleReasons.includes("missing_check_ids"));
+
+    // 2. Complete evidence_hashes, verified_head, worktree_fingerprint, check_ids, matching currentHead=null -> still cannot auto-certify Git baseline!
+    const evHash = sha256File(evFile);
+    const fullState = {
+      ...baseState,
+      steps: [
+        {
+          id: "S1",
+          status: "done",
+          depends_on: [],
+          evidence: [evRel],
+          evidence_hashes: { [evRel]: evHash },
+          verified_head: head,
+          worktree_fingerprint: worktreeFp,
+          check_ids: ["chk-1"],
+        },
+      ],
+      checks: [
+        {
+          id: "chk-1",
+          command: "npm test",
+          result: "passed",
+          exit_code: 0,
+          head_commit: head,
+          recorded_at: "2026-11-15T00:00:00Z",
+        },
+      ],
+    };
+    fs.writeFileSync(path.join(taskDir, "run-state.json"), JSON.stringify(fullState), "utf8");
+
+    const recNullHead = inspectTaskRecovery({
+      projectRoot: dir,
+      taskDir,
+      schemaPath,
+      currentHead: null,
+      isDirty: false,
+      currentWorktreeFingerprint: worktreeFp,
+    });
+    assert.equal(recNullHead.stepSummary[0].verifiedDone, false);
+    assert.ok(recNullHead.stepSummary[0].staleReasons.includes("current_head_unavailable"));
+
+    // 3. Complete valid state + non-null currentHead + matching worktreeFp -> verifiedDone=true
+    const recVerified = inspectTaskRecovery({
+      projectRoot: dir,
+      taskDir,
+      schemaPath,
+      currentHead: head,
+      isDirty: false,
+      currentWorktreeFingerprint: worktreeFp,
+    });
+    assert.equal(recVerified.stepSummary[0].verifiedDone, true);
+    assert.equal(recVerified.reverifyRequired, false);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

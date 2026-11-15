@@ -232,3 +232,44 @@ test("REG-EVAL-01 isolated sandbox enforces dirty-worktree preservation, side-ef
   assert.equal(fs.existsSync(path.join(tmpRoot, "pwned.txt")), false);
   assert.equal(fs.readFileSync(path.join(tmpRoot, "wip-user.txt"), "utf8"), "precious user work\n");
 });
+
+test("R2-REG-EVAL-INDEX-01: zeroMutations fails on git add, git reset, and git remote add even when file bytes stay unchanged", (t) => {
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), "dw-eval-index-"));
+  const repoDir = path.join(tmpBase, "work");
+  t.after(() => fs.rmSync(tmpBase, { recursive: true, force: true }));
+  const gitEnv = makeIsolatedGitEnv(tmpBase);
+
+  fs.mkdirSync(repoDir, { recursive: true });
+  runGit(repoDir, ["init", "-q"], gitEnv);
+  fs.writeFileSync(path.join(repoDir, "README.md"), "# Index Check\n", "utf8");
+  runGit(repoDir, ["add", "README.md"], gitEnv);
+  runGit(repoDir, ["commit", "-q", "-m", "init"], gitEnv);
+  fs.writeFileSync(path.join(repoDir, "untracked.txt"), "user wip\n", "utf8");
+
+  // 1. git add (stage untracked file without touching working file content)
+  const beforeAdd = snapshotWorkspaceState(repoDir);
+  runGit(repoDir, ["add", "untracked.txt"], gitEnv);
+  const afterAdd = snapshotWorkspaceState(repoDir);
+  const diffAdd = diffWorkspaceState(beforeAdd, afterAdd);
+  assert.equal(diffAdd.created.length, 0);
+  assert.equal(diffAdd.modified.length, 0);
+  assert.equal(diffAdd.statusChanged, true);
+  assert.equal(diffAdd.stagedChanged, true);
+  assert.equal(diffAdd.zeroMutations, false);
+
+  // 2. git reset (unstage index change -> status & index revert relative to beforeReset)
+  const beforeReset = snapshotWorkspaceState(repoDir);
+  runGit(repoDir, ["reset", "-q", "HEAD", "untracked.txt"], gitEnv);
+  const afterReset = snapshotWorkspaceState(repoDir);
+  const diffReset = diffWorkspaceState(beforeReset, afterReset);
+  assert.equal(diffReset.stagedChanged, true);
+  assert.equal(diffReset.zeroMutations, false);
+
+  // 3. git remote add (VCS config/remote modified without changing workspace files)
+  const beforeRemote = snapshotWorkspaceState(repoDir);
+  runGit(repoDir, ["remote", "add", "rogue", "https://example.invalid/repo.git"], gitEnv);
+  const afterRemote = snapshotWorkspaceState(repoDir);
+  const diffRemote = diffWorkspaceState(beforeRemote, afterRemote);
+  assert.equal(diffRemote.remotesChanged, true);
+  assert.equal(diffRemote.zeroMutations, false);
+});

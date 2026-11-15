@@ -9,9 +9,9 @@
 
 1. **Format & Contract (`VAL-01..05`)**:
    - `npm run validate`
-   - `npm test` (`contract-static` + `installer-integration`)
+   - `npm test` (`contract-static` + `installer-integration`, including `R2-*` source TOCTOU, shared-host upgrade/downgrade, transactional ledger rollback, and `SIGKILL` crash-recovery tests)
    - `npm run pack && npm run verify:dist` (including decompressed ZIP central-directory & SHA-256 verification)
-2. **Safety, Installer & Behavioral Evals (`VAL-06..10`, `REG-*`)**:
+2. **Safety, Installer & Behavioral Evals (`VAL-06..10`, `REG-*`, `R2-REG-*`)**:
    - `npm run test:safety`
    - `npm run test:scenario` (`contract-static` specs & fixtures)
    - `npm run test:eval` (`agent-behavior-eval` offline harness & `REG-EVAL-01`)

@@ -1,7 +1,7 @@
 # Host Compatibility Report: OpenAI Codex (CLI / App)
 
 - **Host ID**: `codex`
-- **Tested Binary / Version**: `codex-cli 0.144.5` (`/home/kevin/.local/bin/codex`)
+- **Tested Binary / Version**: `codex-cli 0.144.5` (`~/.local/bin/codex`)
 - **OS / Arch**: `linux / x64`
 - **Test Date**: `2026-11-15`
 - **Overall Status**: `PASS` (8/8 lifecycle dimensions verified in isolated `linux / x64` sandboxes with `codex-cli 0.144.5`; 6/8 skills live-invoked under `LIVE_LLM` with `-s workspace-write`, 8/8 skills auto-discovered)
