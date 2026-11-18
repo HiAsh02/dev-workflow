@@ -24,6 +24,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Maintenance
 
+- Aligned English/Chinese READMEs, installation instructions, release checklist, and Codex host guidance with the repository's current public visibility; clarified that public source access does not imply a GitHub Release or stable release readiness.
+- Updated release-checklist CI evidence to reflect the successful Ubuntu and Windows run for commit `70e5be60` while preserving the remaining live-agent verification gaps.
 - Removed superseded research drafts and implementation handoff plans from the current source tree. Updated `AGENTS.md`, architecture docs and README navigation to reference active Skills, schemas and compatibility evidence.
 - Bilingual release archives include language-matched templates and standalone installation guides; source-repository installer commands remain in the full repository.
 

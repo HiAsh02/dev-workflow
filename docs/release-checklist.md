@@ -1,9 +1,10 @@
 # Release Readiness Checklist (`v0.1.0`)
 
 - **Candidate Version**: `0.1.0` (`VERSION`, `plugin.json`, `package.json`, `CHANGELOG.md` synchronized)
-- **Repository**: `https://github.com/HiAsh02/dev-workflow` (Private)
+- **Repository**: `https://github.com/HiAsh02/dev-workflow` (Public; source access does not imply a stable release)
+- **Distribution Status**: Public source repository; no GitHub Release published as of 2026-11-18. `0.1.0` remains a Beta / Partial release candidate.
 - **License**: `MIT` (`LICENSE` present, copyright `2026 HiAsh02`)
-- **Compatibility Tier**: `Beta / Partial` (`codex` & `pi` 8-dimension English `LIVE_LLM` evals passed prior to R4/bilingual changes; offline `grok-build` `NATIVE_HOST` discovery verified for both `en` & `zh-CN` with `invoke` `BLOCKED`; `antigravity` `invoke` `NOT_TESTED`; CI on R4 + bilingual commits pending user authorization to commit/push)
+- **Compatibility Tier**: `Beta / Partial` (`codex` & `pi` 8-dimension English `LIVE_LLM` evals passed prior to R4/bilingual changes; offline `grok-build` `NATIVE_HOST` discovery verified for both `en` & `zh-CN` with `invoke` `BLOCKED`; `antigravity` `invoke` `NOT_TESTED`; Ubuntu and Windows CI passed on `main` at `70e5be60` on 2026-11-15, but post-R4/bilingual live LLM evaluations are still pending)
 
 ## Gate Summary
 
@@ -22,7 +23,7 @@
    - `pi` (`1.5.2`): `PASS` — 8/8 lifecycle dimensions (`6/8` skills live-invoked, `8/8` discovered; see `docs/compatibility/pi.md`)
    - `grok-build` (`grok 1.0.52`): `PARTIAL` — `NATIVE_HOST` discovery & plugin install pass; `LIVE_LLM` `invoke` `BLOCKED` (`You are not authenticated.`) (see `docs/compatibility/grok-build.md`)
    - `antigravity` (`44.9.1`): `PARTIAL` — 7/8 dimensions verified (including `NATIVE_HOST` `GetAllPlugins` 8-skill discovery); `LIVE_LLM` `invoke` `NOT_TESTED` (see `docs/compatibility/antigravity.md`)
-4. **Remaining Gaps Before Public `v1.0.0` or Marketplace Publishing**:
+4. **Remaining Gaps Before Stable `v1.0.0` or Marketplace Publishing**:
    - Run authenticated live LLM `invoke` smoke runs on `grok-build` (`grok login` required) and verify interactive IDE/agent invocation on `antigravity` (plus live behavioral eval runs specifically targeting `dw-design` & `dw-plan`).
-   - Re-verify `.github/workflows/validate.yml` (`ubuntu-latest` & `windows-latest`) on CI after committing updated tests/fixes with explicit user approval.
-   - Obtain explicit user approval before committing/pushing, changing repository visibility from `private` to `public`, or creating a public release tag.
+   - [Ubuntu + Windows CI run 43727440376](https://github.com/HiAsh02/dev-workflow/actions/runs/43727440376) passed for `main` commit `70e5be60` (2026-11-15). Require both CI jobs to pass on the exact release-candidate commit before tagging; later commits need their own verification.
+   - Repository visibility is already `public`; no visibility change is pending. Obtain separate explicit authorization before creating a release tag, publishing release artifacts, or publishing to a marketplace.

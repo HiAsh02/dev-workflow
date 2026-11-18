@@ -2,8 +2,8 @@
 
 可移植、以证据为基础的软件工程工作流。工作流以 **Agent Skills**（`skills/dw-*/SKILL.md`）形式定义，并使用符合 **Agent Plugins v1.0.0** 的 `plugin.json` 封装。
 
-仓库：`https://github.com/HiAsh02/dev-workflow`（私有）。
-当前发布状态：`0.1.0`（跨宿主验证为 `Beta / Partial`；参见 [兼容性说明](./docs/COMPATIBILITY.md)）  
+仓库：`https://github.com/HiAsh02/dev-workflow`（公开）。  
+当前发布状态：`0.1.0`（跨宿主验证为 `Beta / Partial`；源码已公开不代表已经发布 GitHub Release；参见 [兼容性说明](./docs/COMPATIBILITY.md)）  
 支持语言：`zh-CN`（简体中文镜像 `locales/zh-CN/`）与 `en`（原英文 canonical `skills/`，见 [README.md](./README.md)）
 
 ## 核心原则
@@ -35,11 +35,14 @@
 
 完整证据矩阵位于 [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md)。跨平台 CI（[`.github/workflows/validate.yml`](./.github/workflows/validate.yml)）在 `ubuntu-latest` 和 `windows-latest` 上执行完整验证与打包测试。
 
-## 安装（私有仓库阶段）
+## 安装（公开源码仓库）
 
-先克隆有权访问的 `HiAsh02/dev-workflow`，检查拟修改内容，并在安装到目标工程前预览：
+直接克隆公开源码仓库，检查安装内容，并在安装到目标工程前预览：
 
 ```bash
+git clone https://github.com/HiAsh02/dev-workflow.git
+cd dev-workflow
+
 # 1. 查看本机宿主程序（不修改目标文件；检查 codex/grok/pi 的 --version）
 node bin/dev-workflow.mjs doctor --host all
 

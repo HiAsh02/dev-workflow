@@ -2,8 +2,8 @@
 
 Portable, evidence-driven software engineering workflows packaged as **Agent Skills** (`skills/dw-*/SKILL.md`) inside an **Agent Plugins v1.0.0** manifest (`plugin.json`).
 
-Repository: `https://github.com/HiAsh02/dev-workflow` (Private)  
-Current release status: `0.1.0` (`Beta / Partial` cross-host verification — see [COMPATIBILITY.md](./docs/COMPATIBILITY.md))  
+Repository: `https://github.com/HiAsh02/dev-workflow` (Public)  
+Current release status: `0.1.0` (`Beta / Partial` cross-host verification; public source does not imply a published GitHub Release — see [COMPATIBILITY.md](./docs/COMPATIBILITY.md))  
 Languages: English (`en`, canonical `skills/`) and Simplified Chinese (`zh-CN`, mirrored `locales/zh-CN/skills/` + [README.zh-CN.md](./README.zh-CN.md))
 
 ## Key Principles
@@ -35,11 +35,14 @@ Languages: English (`en`, canonical `skills/`) and Simplified Chinese (`zh-CN`, 
 
 Full evidence matrices live in [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md). Cross-platform CI ([`.github/workflows/validate.yml`](./.github/workflows/validate.yml)) runs the full validation and packaging suite on `ubuntu-latest` and `windows-latest`.
 
-## Installation (Private Repository Stage)
+## Installation (Public Source Repository)
 
-Clone your authorized copy of `HiAsh02/dev-workflow` locally, inspect the changes, and preview before installing into a target project:
+Clone the public source repository, inspect the files, and preview changes before installing into a target project:
 
 ```bash
+git clone https://github.com/HiAsh02/dev-workflow.git
+cd dev-workflow
+
 # 1. Inspect local host binaries (never edits target files; runs `--version` for codex/grok/pi)
 node bin/dev-workflow.mjs doctor --host all
 

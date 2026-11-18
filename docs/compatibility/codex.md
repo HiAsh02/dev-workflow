@@ -29,4 +29,4 @@ Evidence types: `STATIC` | `NODE_INTEGRATION` | `NATIVE_HOST` | `LIVE_LLM`
 
 ## Known Limitations & Fallback
 
-- `codex plugin add` installs plugins only from configured marketplace snapshots (`PLUGIN@MARKETPLACE`). Local/private repository installs therefore use `skills` mode into `.agents/skills/`.
+- `codex plugin add` installs plugins only from configured marketplace snapshots (`PLUGIN@MARKETPLACE`). Direct installations from a local checkout (including clones of this public repository) therefore use `skills` mode into `.agents/skills/`.
